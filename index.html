@@ -1,12 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>電動車安全救援訓練統計系統</title>
-
-    <!-- 工具庫 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -15,35 +12,24 @@
 
     <script>
         // ==========================================
-        // ⚠️ 請填入您的 Google Apps Script 網址
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwAyvCxPoUT1g8HHFIvFvBd7gzd6OM3zeFoaTjTDGlZhBE3ymLwMPRBWSLZkX-A1ILM/exec";
+        // ⚠️【請修改這裡】填入您的 Google Apps Script 網址
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzRAbRfImQOfuRUOjmX1EvM1wLSSrLccGVWt1gfckfkcfhufhmtsazDDNLeXdGKH2zM/exec";
         // ==========================================
     </script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
-
         body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f1f5f9; }
-
-        /* 側邊欄與布局 */
         .sidebar-link { cursor: pointer; transition: all 0.2s; }
         .sidebar-link.active { background: rgba(37, 99, 235, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
         .sidebar-link:hover:not(.active) { background: #1e293b; color: white; }
-
-        /* 表格樣式 */
         .table-wrapper { overflow-x: auto; background: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); }
         table { width: 100%; min-width: 1100px; border-collapse: collapse; table-layout: fixed; }
         th { background: #f8fafc; color: #475569; font-weight: 700; padding: 10px; border: 1px solid #cbd5e1; font-size: 14px; }
         td { border: 1px solid #cbd5e1; height: 42px; padding: 0; vertical-align: middle; background: white; }
-        
-        /* 輸入框 */
         input[type="text"], input[type="number"] { width: 100%; height: 100%; border: none; text-align: center; outline: none; font-size: 14px; background: transparent; color: #334155; }
         input:focus { background: #eff6ff; box-shadow: inset 0 0 0 2px #3b82f6; }
-        
-        /* 灰底範例列 */
         .example-row td { background: #f1f5f9; color: #94a3b8; font-style: italic; font-size: 13px; text-align: center; pointer-events: none; user-select: none; }
-
-        /* 按鈕 */
         .btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: 0.2s; font-size: 14px; }
         .btn-blue { background: #2563eb; color: white; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
         .btn-blue:hover { background: #1d4ed8; }
@@ -51,53 +37,33 @@
         .btn-green:hover { background: #047857; }
         .btn-white { background: white; border: 1px solid #cbd5e1; color: #475569; }
         .btn-white:hover { background: #f8fafc; border-color: #94a3b8; color: #2563eb; }
-
-        /* 日曆 Modal */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
         .day-cell { padding: 8px; text-align: center; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; font-size: 14px; background: white; }
         .day-cell:hover { background: #f1f5f9; }
         .day-cell.selected { background: #3b82f6; color: white; border-color: #2563eb; font-weight: bold; }
-        .day-cell.weekend { color: #ef4444; } /* 六日紅字 */
+        .day-cell.weekend { color: #ef4444; }
         .day-cell.empty { border: none; background: transparent; cursor: default; }
-
         #loading { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: none; justify-content: center; align-items: center; color: white; backdrop-filter: blur(2px); }
         .spinner { width: 40px; height: 40px; border: 4px solid #fff; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
-
 <body class="bg-slate-100 h-screen flex overflow-hidden">
+    <div id="loading"><div class="spinner mb-4"></div><div class="font-bold text-lg">資料處理中...</div></div>
 
-    <div id="loading">
-        <div class="spinner mb-4"></div>
-        <div class="font-bold text-lg">資料處理中...</div>
-    </div>
-
-    <!-- 1. 側邊欄 -->
     <aside class="w-64 bg-slate-900 text-white flex-col hidden md:flex shadow-2xl z-20">
         <div class="p-6 border-b border-slate-800 flex items-center gap-3">
             <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg"><i class="ri-charging-pile-2-line text-xl"></i></div>
-            <div>
-                <h1 class="font-bold text-lg tracking-wide">電動車訓練</h1>
-                <p class="text-xs text-slate-400">統計管理系統</p>
-            </div>
+            <div><h1 class="font-bold text-lg tracking-wide">電動車訓練</h1><p class="text-xs text-slate-400">統計管理系統</p></div>
         </div>
         <nav class="flex-1 p-4 space-y-2">
-            <div onclick="switchPage('input')" id="nav-input" class="sidebar-link active px-4 py-3 rounded-xl flex items-center gap-3">
-                <i class="ri-edit-2-line text-xl"></i> 新增作業區
-            </div>
-            <div onclick="switchPage('history')" id="nav-history" class="sidebar-link px-4 py-3 rounded-xl flex items-center gap-3">
-                <i class="ri-database-2-line text-xl"></i> 歷史資料庫
-            </div>
+            <div onclick="switchPage('input')" id="nav-input" class="sidebar-link active px-4 py-3 rounded-xl flex items-center gap-3"><i class="ri-edit-2-line text-xl"></i> 新增作業區</div>
+            <div onclick="switchPage('history')" id="nav-history" class="sidebar-link px-4 py-3 rounded-xl flex items-center gap-3"><i class="ri-database-2-line text-xl"></i> 歷史資料庫</div>
         </nav>
-        <div class="p-4 border-t border-slate-800 text-center text-xs text-slate-500">
-            僅供內部使用 v2.0
-        </div>
+        <div class="p-4 border-t border-slate-800 text-center text-xs text-slate-500">僅供內部使用 v2.0</div>
     </aside>
 
-    <!-- 2. 主內容區 -->
     <main class="flex-1 flex flex-col h-full overflow-hidden relative">
-        <!-- 手機版 Header -->
         <div class="md:hidden h-14 bg-white border-b flex items-center px-4 justify-between">
             <div class="font-bold text-slate-800">電動車訓練統計</div>
             <div class="flex gap-4">
@@ -106,7 +72,6 @@
             </div>
         </div>
 
-        <!-- 頁面 A: 新增作業區 -->
         <div id="page-input" class="flex-1 flex flex-col p-6 overflow-hidden">
             <div class="flex justify-between items-center mb-4">
                 <div class="flex items-center gap-2">
@@ -115,50 +80,21 @@
                     <span class="text-sm text-slate-500 ml-2">(請在此輸入新資料，儲存後將送至雲端)</span>
                 </div>
                 <div class="flex gap-2">
-                    <!-- 新增：下載 CSV 範本 -->
                     <button class="btn btn-white" onclick="downloadTemplate()"><i class="ri-file-download-line"></i> 下載範本</button>
                     <button class="btn btn-white" onclick="$('#csvInput').click()"><i class="ri-upload-2-line"></i> 匯入 CSV</button>
                     <button class="btn btn-blue" onclick="saveToCloud()"><i class="ri-cloud-upload-line"></i> 儲存至雲端</button>
                 </div>
             </div>
-
             <div class="table-wrapper flex-1">
                 <table id="inputTable">
-                    <thead>
-                        <tr>
-                            <th style="width:50px">刪除</th>
-                            <th style="width:50px">項次</th>
-                            <th style="width:220px">日期 (支援智慧輸入)</th>
-                            <th style="width:150px">單位/層級</th>
-                            <th style="width:200px">地點</th>
-                            <th style="width:200px">訓練項目</th>
-                            <th style="width:80px">辦理<br>場次</th>
-                            <th style="width:80px">參與<br>人數</th>
-                            <th style="width:150px">備註</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th style="width:50px">刪除</th><th style="width:50px">項次</th><th style="width:220px">日期 (支援智慧輸入)</th><th style="width:150px">單位/層級</th><th style="width:200px">地點</th><th style="width:200px">訓練項目</th><th style="width:80px">辦理<br>場次</th><th style="width:80px">參與<br>人數</th><th style="width:150px">備註</th></tr></thead>
                     <tbody id="inputBody"></tbody>
-                    <!-- 灰底範例列 -->
-                    <tfoot class="example-row">
-                        <tr>
-                            <td></td><td>Ex</td>
-                            <td>114年1月1、2日</td>
-                            <td>信義中隊</td>
-                            <td>地下停車場</td>
-                            <td>滅火毯操作</td>
-                            <td>1</td><td>20</td>
-                            <td>(範例格式)</td>
-                        </tr>
-                    </tfoot>
+                    <tfoot class="example-row"><tr><td></td><td>Ex</td><td>114年1月1、2日</td><td>信義中隊</td><td>地下停車場</td><td>滅火毯操作</td><td>1</td><td>20</td><td>(範例格式)</td></tr></tfoot>
                 </table>
             </div>
-            
-            <div class="mt-4 flex justify-center">
-                <button class="btn btn-white w-full md:w-auto justify-center shadow-sm" onclick="addInputRow()"><i class="ri-add-line text-lg"></i> 新增一列</button>
-            </div>
+            <div class="mt-4 flex justify-center"><button class="btn btn-white w-full md:w-auto justify-center shadow-sm" onclick="addInputRow()"><i class="ri-add-line text-lg"></i> 新增一列</button></div>
         </div>
 
-        <!-- 頁面 B: 歷史資料庫 -->
         <div id="page-history" class="hidden flex-1 flex-col p-6 overflow-hidden">
             <div class="flex justify-between items-center mb-4">
                 <div class="flex items-center gap-2">
@@ -170,48 +106,28 @@
                     <button class="btn btn-white" onclick="loadHistory()"><i class="ri-refresh-line"></i> 重新整理</button>
                     <div class="relative">
                         <button class="btn btn-green"><i class="ri-file-excel-2-line"></i> 下載報表</button>
-                        <!-- 下載選單 -->
                         <div class="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 hidden group-hover:block z-50 p-2">
-                            <div onclick="exportExcel('report')" class="px-4 py-3 hover:bg-emerald-50 rounded-lg cursor-pointer text-sm font-bold text-emerald-700 mb-1">
-                                <i class="ri-file-list-3-line mr-2"></i>陳報上級版 (精簡)
-                            </div>
-                            <div onclick="exportExcel('full')" class="px-4 py-3 hover:bg-slate-50 rounded-lg cursor-pointer text-sm text-slate-600">
-                                <i class="ri-database-2-line mr-2"></i>完整資料庫 (備份)
-                            </div>
+                            <div onclick="exportExcel('report')" class="px-4 py-3 hover:bg-emerald-50 rounded-lg cursor-pointer text-sm font-bold text-emerald-700 mb-1"><i class="ri-file-list-3-line mr-2"></i>陳報上級版 (精簡)</div>
+                            <div onclick="exportExcel('full')" class="px-4 py-3 hover:bg-slate-50 rounded-lg cursor-pointer text-sm text-slate-600"><i class="ri-database-2-line mr-2"></i>完整資料庫 (備份)</div>
                         </div>
                     </div>
                 </div>
             </div>
-
             <div class="bg-emerald-50 border border-emerald-100 px-4 py-3 rounded-xl mb-4 flex gap-6 text-sm text-emerald-800 font-bold shadow-sm">
                 <div><i class="ri-bar-chart-box-line text-lg mr-1"></i> 總場次：<span id="histTotalSession" class="text-xl">0</span> 場</div>
                 <div><i class="ri-group-line text-lg mr-1"></i> 總人數：<span id="histTotalPeople" class="text-xl">0</span> 人</div>
             </div>
-
             <div class="table-wrapper flex-1">
                 <table id="historyTable">
-                    <thead>
-                        <tr>
-                            <th style="width:60px">項次</th>
-                            <th style="width:250px">日期</th>
-                            <th style="width:150px">單位/層級</th>
-                            <th style="width:200px">地點</th>
-                            <th style="width:250px">訓練項目</th>
-                            <th style="width:80px">辦理<br>場次</th>
-                            <th style="width:80px">參與<br>人數</th>
-                            <th style="width:150px">備註</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th style="width:60px">項次</th><th style="width:250px">日期</th><th style="width:150px">單位/層級</th><th style="width:200px">地點</th><th style="width:250px">訓練項目</th><th style="width:80px">辦理<br>場次</th><th style="width:80px">參與<br>人數</th><th style="width:150px">備註</th></tr></thead>
                     <tbody id="historyBody"></tbody>
                 </table>
             </div>
         </div>
     </main>
 
-    <!-- 隱藏 CSV 輸入 -->
     <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="processCSV(this)">
 
-    <!-- 日曆 Modal -->
     <div id="calendarModal" class="fixed inset-0 bg-black/50 hidden z-[1000] justify-center items-center backdrop-blur-sm">
         <div class="bg-white w-[350px] p-5 rounded-2xl shadow-2xl">
             <div class="flex justify-between items-center mb-2">
@@ -219,19 +135,14 @@
                 <div class="font-bold text-lg" id="calMonthTitle">2025年 1月</div>
                 <button onclick="changeMonth(1)" class="p-1 hover:bg-slate-100 rounded"><i class="ri-arrow-right-s-line"></i></button>
             </div>
-            
             <div class="flex gap-2 mb-3 text-xs">
                 <button onclick="calFilter('all')" class="flex-1 py-1 border rounded hover:bg-slate-50">全選</button>
                 <button onclick="calFilter('noWeekend')" class="flex-1 py-1 border rounded hover:bg-slate-50">排除六日</button>
                 <button onclick="calFilter('onlyWeekend')" class="flex-1 py-1 border rounded hover:bg-slate-50">僅選六日</button>
                 <button onclick="calClear()" class="px-2 py-1 border border-red-200 text-red-500 rounded hover:bg-red-50">清</button>
             </div>
-
-            <div class="calendar-grid text-sm font-bold text-slate-400 mb-1">
-                <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
-            </div>
+            <div class="calendar-grid text-sm font-bold text-slate-400 mb-1"><div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div></div>
             <div id="calGrid" class="calendar-grid"></div>
-
             <div class="mt-4 flex justify-end gap-2">
                 <button onclick="$('#calendarModal').classList.add('hidden')" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg">取消</button>
                 <button onclick="confirmDate()" class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">確定</button>
@@ -241,73 +152,31 @@
 
     <script>
         const $ = (s) => document.querySelector(s);
-        let inputData = [];
-        let historyData = [];
-        let currentCalRow = null;
-        let selectedDates = new Set();
-        let currentYear = 2025;
-        let currentMonth = 1;
+        let inputData = [], historyData = [], currentCalRow = null, selectedDates = new Set(), currentYear = 2025, currentMonth = 1;
+        const builtInHolidays = {}; 
 
-        // 初始化
-        window.onload = function() {
-            addInputRow(); 
-            loadHistory();
-        };
+        window.onload = function() { addInputRow(); loadHistory(); };
 
-        // ============================
-        // 頁面切換邏輯
-        // ============================
         function switchPage(page) {
             document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
             if(document.getElementById(`nav-${page}`)) document.getElementById(`nav-${page}`).classList.add('active');
-            $('#page-input').classList.add('hidden');
-            $('#page-history').classList.add('hidden');
+            $('#page-input').classList.add('hidden'); $('#page-history').classList.add('hidden');
             $(`#page-${page}`).classList.remove('hidden');
         }
 
-        // ============================
-        // 新增作業區邏輯
-        // ============================
-        function addInputRow(data = {}) {
-            const row = {
-                date: data.date || '',
-                unit: data.unit || '',
-                loc: data.loc || '',
-                item: data.item || '',
-                session: data.session || '',
-                people: data.people || '',
-                note: data.note || ''
-            };
-            inputData.push(row);
+        function addInputRow(data={}) {
+            inputData.push({ date: data.date||'', unit: data.unit||'', loc: data.loc||'', item: data.item||'', session: data.session||'', people: data.people||'', note: data.note||'' });
             renderInputTable();
         }
-
-        function removeInputRow(index) {
-            if (inputData.length > 1) {
-                inputData.splice(index, 1);
-                renderInputTable();
-            } else {
-                inputData[0] = { date:'', unit:'', loc:'', item:'', session:'', people:'', note:'' };
-                renderInputTable();
-            }
+        function removeInputRow(idx) {
+            if (inputData.length > 1) inputData.splice(idx, 1); else inputData[0] = {date:'', unit:'', loc:'', item:'', session:'', people:'', note:''};
+            renderInputTable();
         }
-
         function renderInputTable() {
-            const tbody = $('#inputBody');
-            tbody.innerHTML = '';
+            const tbody = $('#inputBody'); tbody.innerHTML = '';
             inputData.forEach((row, i) => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="text-center"><button onclick="removeInputRow(${i})" class="text-slate-300 hover:text-red-500"><i class="ri-close-circle-fill text-xl"></i></button></td>
-                    <td class="text-center text-slate-400 font-mono">${i + 1}</td>
-                    <td><div class="flex items-center h-full"><input type="text" value="${row.date}" onchange="inputData[${i}].date=this.value" placeholder="點擊選取日期"><button onclick="openCalendar(${i})" class="w-8 h-full bg-slate-50 border-l hover:text-blue-600"><i class="ri-calendar-line"></i></button></div></td>
-                    <td><input type="text" value="${row.unit}" onchange="inputData[${i}].unit=this.value"></td>
-                    <td><input type="text" value="${row.loc}" onchange="inputData[${i}].loc=this.value"></td>
-                    <td><input type="text" value="${row.item}" onchange="inputData[${i}].item=this.value"></td>
-                    <td><input type="number" value="${row.session}" onchange="inputData[${i}].session=this.value"></td>
-                    <td><input type="number" value="${row.people}" onchange="inputData[${i}].people=this.value"></td>
-                    <td><input type="text" value="${row.note}" onchange="inputData[${i}].note=this.value"></td>
-                `;
+                tr.innerHTML = `<td class="text-center"><button onclick="removeInputRow(${i})" class="text-slate-300 hover:text-red-500"><i class="ri-close-circle-fill text-xl"></i></button></td><td class="text-center text-slate-400 font-mono">${i + 1}</td><td><div class="flex items-center h-full"><input type="text" value="${row.date}" onchange="inputData[${i}].date=this.value" placeholder="點擊選取日期"><button onclick="openCalendar(${i})" class="w-8 h-full bg-slate-50 border-l hover:text-blue-600"><i class="ri-calendar-line"></i></button></div></td><td><input type="text" value="${row.unit}" onchange="inputData[${i}].unit=this.value"></td><td><input type="text" value="${row.loc}" onchange="inputData[${i}].loc=this.value"></td><td><input type="text" value="${row.item}" onchange="inputData[${i}].item=this.value"></td><td><input type="number" value="${row.session}" onchange="inputData[${i}].session=this.value"></td><td><input type="number" value="${row.people}" onchange="inputData[${i}].people=this.value"></td><td><input type="text" value="${row.note}" onchange="inputData[${i}].note=this.value"></td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -315,267 +184,107 @@
         function saveToCloud() {
             const validData = inputData.filter(r => r.date || r.item || r.session);
             if (validData.length === 0) return alert('沒有資料可儲存');
-
             $('#loading').style.display = 'flex';
-            fetch(GAS_API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ data: validData, mode: 'append' }),
-                headers: { 'Content-Type': 'text/plain' }
-            })
+            fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ data: validData, mode: 'append' }), headers: { 'Content-Type': 'text/plain' } })
             .then(res => res.json())
             .then(json => {
-                if (json.status === 'success') {
-                    alert('儲存成功！資料已寫入雲端。');
-                    inputData = [];
-                    addInputRow(); 
-                    loadHistory(); 
-                } else {
-                    alert('儲存失敗: ' + json.message);
-                }
-            })
-            .catch(err => alert('連線錯誤'))
-            .finally(() => $('#loading').style.display = 'none');
+                if (json.status === 'success') { alert('儲存成功！'); inputData=[]; addInputRow(); loadHistory(); } else alert('儲存失敗: ' + json.message);
+            }).catch(()=>alert('連線錯誤')).finally(() => $('#loading').style.display = 'none');
         }
 
-        // ============================
-        // CSV 處理邏輯
-        // ============================
-        
-        // 下載 CSV 範本
         function downloadTemplate() {
-            const csvContent = "\uFEFF日期,單位/層級,地點,訓練項目,辦理場次,參與人數,備註\n114年1月1、2日,信義中隊,駐地,滅火毯操作,1,15,範例資料";
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            saveAs(blob, "訓練統計匯入範本.csv");
+            const csv = "\uFEFF日期,單位/層級,地點,訓練項目,辦理場次,參與人數,備註\n114年1月1日,信義中隊,駐地,滅火毯操作,1,15,範例";
+            saveAs(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), "訓練統計匯入範本.csv");
         }
 
         function processCSV(input) {
             if (!input.files[0]) return;
-            Papa.parse(input.files[0], {
-                header: true, skipEmptyLines: true,
-                complete: function (res) {
-                    const imported = res.data;
-                    imported.forEach(r => {
-                        const get = (keys) => { for(let k of Object.keys(r)) if(keys.some(key=>k.includes(key))) return r[k]; return ''; };
-                        inputData.push({
-                            date: get(['日期','Date']), unit: get(['單位','Unit']), loc: get(['地點','Loc']), item: get(['項目','Item']),
-                            session: get(['場次','Session']), people: get(['人數','Peo']), note: get(['備註'])
-                        });
-                    });
-                    renderInputTable();
-                    alert(`已匯入 ${imported.length} 筆資料到輸入區`);
-                    input.value = '';
-                }
-            });
+            Papa.parse(input.files[0], { header: true, skipEmptyLines: true, complete: function (res) {
+                const imp = res.data;
+                imp.forEach(r => {
+                    const get = (keys) => { for(let k of Object.keys(r)) if(keys.some(key=>k.includes(key))) return r[k]; return ''; };
+                    inputData.push({ date: get(['日期','Date']), unit: get(['單位','Unit']), loc: get(['地點','Loc']), item: get(['項目','Item']), session: get(['場次','Session']), people: get(['人數','Peo']), note: get(['備註']) });
+                });
+                renderInputTable(); alert(`已匯入 ${imp.length} 筆資料`); input.value = '';
+            }});
         }
 
-        // ============================
-        // 歷史資料庫邏輯 (含排序)
-        // ============================
-        
-        // 輔助：把中文日期轉成數字 (例如 "114年1月5日" -> 1140105) 供排序使用
         function getDateValue(dateStr) {
             if (!dateStr) return 0;
-            const match = dateStr.match(/(\d+)年(\d+)月(\d+)/);
-            if (match) {
-                const y = parseInt(match[1]);
-                const m = parseInt(match[2]);
-                const d = parseInt(match[3]);
-                return y * 10000 + m * 100 + d;
-            }
-            return 0; 
+            const m = dateStr.match(/(\d+)年(\d+)月(\d+)/);
+            if (m) return parseInt(m[1])*10000 + parseInt(m[2])*100 + parseInt(m[3]);
+            return 0;
         }
 
         function loadHistory() {
             if(GAS_API_URL.includes("請填入")) return;
-
-            fetch(GAS_API_URL)
-            .then(res => res.json())
-            .then(json => {
+            fetch(GAS_API_URL).then(r => r.json()).then(json => {
                 if (json.status === 'success') {
-                    let rawData = json.data;
-                    
-                    // ★ 排序邏輯：由新到舊
-                    rawData.sort((a, b) => getDateValue(b.date) - getDateValue(a.date));
-
-                    historyData = rawData;
+                    historyData = json.data;
+                    historyData.sort((a, b) => getDateValue(b.date) - getDateValue(a.date)); // 由新到舊
                     renderHistoryTable();
                 }
             });
         }
 
         function renderHistoryTable() {
-            const tbody = $('#historyBody');
-            tbody.innerHTML = '';
+            const tbody = $('#historyBody'); tbody.innerHTML = '';
             let tSession = 0, tPeople = 0;
-
             historyData.forEach((row, i) => {
-                tSession += parseInt(row.session) || 0;
-                tPeople += parseInt(row.people) || 0;
-                
+                tSession += parseInt(row.session)||0; tPeople += parseInt(row.people)||0;
                 const tr = document.createElement('tr');
                 tr.className = i % 2 === 0 ? 'bg-white' : 'bg-slate-50';
-                tr.innerHTML = `
-                    <td class="text-center text-slate-500 font-mono text-xs">${i + 1}</td>
-                    <td class="px-2">${row.date}</td>
-                    <td class="px-2 text-slate-600 text-sm">${row.unit}</td>
-                    <td class="px-2 text-slate-600 text-sm">${row.loc}</td>
-                    <td class="px-2">${row.item}</td>
-                    <td class="text-center font-bold text-blue-600">${row.session}</td>
-                    <td class="text-center font-bold text-emerald-600">${row.people}</td>
-                    <td class="px-2 text-xs text-slate-400">${row.note}</td>
-                `;
+                tr.innerHTML = `<td class="text-center text-slate-500 font-mono text-xs">${i+1}</td><td class="px-2">${row.date}</td><td class="px-2 text-slate-600 text-sm">${row.unit}</td><td class="px-2 text-slate-600 text-sm">${row.loc}</td><td class="px-2">${row.item}</td><td class="text-center font-bold text-blue-600">${row.session}</td><td class="text-center font-bold text-emerald-600">${row.people}</td><td class="px-2 text-xs text-slate-400">${row.note}</td>`;
                 tbody.appendChild(tr);
             });
-
-            $('#histTotalSession').innerText = tSession;
-            $('#histTotalPeople').innerText = tPeople;
+            $('#histTotalSession').innerText = tSession; $('#histTotalPeople').innerText = tPeople;
         }
 
-        // ============================
-        // 智慧日曆邏輯
-        // ============================
-        function openCalendar(rowIndex) {
-            currentCalRow = rowIndex;
-            selectedDates.clear();
-            renderCalendarGrid();
-            $('#calendarModal').classList.remove('hidden');
-            $('#calendarModal').classList.add('flex');
-        }
-
+        function openCalendar(idx) { currentCalRow = idx; selectedDates.clear(); renderCalendarGrid(); $('#calendarModal').classList.remove('hidden'); $('#calendarModal').classList.add('flex'); }
         function renderCalendarGrid() {
-            const grid = $('#calGrid');
-            grid.innerHTML = '';
+            const grid = $('#calGrid'); grid.innerHTML = '';
             $('#calMonthTitle').innerText = `${currentYear}年 ${currentMonth}月`;
-
-            const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-            const firstDayWeek = new Date(currentYear, currentMonth - 1, 1).getDay();
-
-            for(let i=0; i<firstDayWeek; i++) grid.innerHTML += `<div class="day-cell empty"></div>`;
-
-            for(let d=1; d<=daysInMonth; d++) {
+            const days = new Date(currentYear, currentMonth, 0).getDate();
+            const first = new Date(currentYear, currentMonth - 1, 1).getDay();
+            for(let i=0; i<first; i++) grid.innerHTML += `<div class="day-cell empty"></div>`;
+            for(let d=1; d<=days; d++) {
                 const key = `${currentYear}/${currentMonth}/${d}`;
-                const week = new Date(currentYear, currentMonth-1, d).getDay();
-                const isWeekend = (week===0 || week===6);
-                const isSelected = selectedDates.has(key);
-                
+                const w = new Date(currentYear, currentMonth-1, d).getDay();
+                const isWk = (w===0||w===6);
+                const isSel = selectedDates.has(key);
                 const div = document.createElement('div');
-                div.className = `day-cell ${isWeekend ? 'weekend' : ''} ${isSelected ? 'selected' : ''}`;
-                div.innerText = d;
-                div.onclick = () => {
-                    if(selectedDates.has(key)) selectedDates.delete(key);
-                    else selectedDates.add(key);
-                    renderCalendarGrid();
-                };
+                div.className = `day-cell ${isWk?'weekend':''} ${isSel?'selected':''}`; div.innerText = d;
+                div.onclick = () => { if(selectedDates.has(key)) selectedDates.delete(key); else selectedDates.add(key); renderCalendarGrid(); };
                 grid.appendChild(div);
             }
         }
-
-        function changeMonth(delta) {
-            currentMonth += delta;
-            if(currentMonth > 12) { currentMonth = 1; currentYear++; }
-            if(currentMonth < 1) { currentMonth = 12; currentYear--; }
-            renderCalendarGrid();
-        }
-
+        function changeMonth(delta) { currentMonth+=delta; if(currentMonth>12){currentMonth=1;currentYear++;} if(currentMonth<1){currentMonth=12;currentYear--;} renderCalendarGrid(); }
         function calFilter(type) {
-            const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-            for(let d=1; d<=daysInMonth; d++) {
-                const key = `${currentYear}/${currentMonth}/${d}`;
-                const w = new Date(currentYear, currentMonth-1, d).getDay();
-                const isWk = (w===0 || w===6);
-                
-                if (type === 'all') selectedDates.add(key);
-                else if (type === 'noWeekend' && !isWk) selectedDates.add(key);
-                else if (type === 'onlyWeekend' && isWk) selectedDates.add(key);
-            }
-            renderCalendarGrid();
+            const days = new Date(currentYear, currentMonth, 0).getDate();
+            for(let d=1; d<=days; d++) {
+                const key = `${currentYear}/${currentMonth}/${d}`; const w = new Date(currentYear, currentMonth-1, d).getDay(); const isWk = (w===0||w===6);
+                if (type==='all') selectedDates.add(key);
+                else if (type==='noWeekend' && !isWk) selectedDates.add(key);
+                else if (type==='onlyWeekend' && isWk) selectedDates.add(key);
+            } renderCalendarGrid();
         }
-
         function calClear() { selectedDates.clear(); renderCalendarGrid(); }
-
         function confirmDate() {
-            const sorted = Array.from(selectedDates).map(s => {
-                const [y, m, d] = s.split('/').map(Number);
-                return {y, m, d};
-            }).sort((a,b) => (a.y*10000 + a.m*100 + a.d) - (b.y*10000 + b.m*100 + b.d));
-
-            if (sorted.length === 0) { $('#calendarModal').classList.add('hidden'); return; }
-
-            let groups = {};
-            sorted.forEach(o => {
-                const k = `${o.y}-${o.m}`;
-                if(!groups[k]) groups[k] = [];
-                groups[k].push(o.d);
-            });
-
-            let strParts = [];
-            for (let k in groups) {
-                const [y, m] = k.split('-').map(Number);
-                const rocYear = y - 1911;
-                const daysStr = groups[k].join('、'); 
-                strParts.push(`${rocYear}年${m}月${daysStr}日`);
-            }
-
-            const finalStr = strParts.join('；'); 
-            inputData[currentCalRow].date = finalStr;
-            renderInputTable();
-            $('#calendarModal').classList.add('hidden');
+            const sorted = Array.from(selectedDates).map(s=>{const[y,m,d]=s.split('/').map(Number); return {y,m,d}}).sort((a,b)=>(a.y*10000+a.m*100+a.d)-(b.y*10000+b.m*100+b.d));
+            if(sorted.length===0) { $('#calendarModal').classList.add('hidden'); return; }
+            let groups = {}; sorted.forEach(o=>{ const k=`${o.y}-${o.m}`; if(!groups[k]) groups[k]=[]; groups[k].push(o.d); });
+            let parts = []; for(let k in groups) { const [y,m]=k.split('-').map(Number); parts.push(`${y-1911}年${m}月${groups[k].join('、')}日`); }
+            inputData[currentCalRow].date = parts.join('；'); renderInputTable(); $('#calendarModal').classList.add('hidden');
         }
 
-        // ============================
-        // 匯出 Excel
-        // ============================
         async function exportExcel(mode) {
-            const wb = new ExcelJS.Workbook();
-            const ws = wb.addWorksheet('統計表');
-
+            const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet('統計表');
             const isFull = mode === 'full';
-            ws.columns = isFull ? [
-                { header: '項次', key: 'id', width: 8 },
-                { header: '日期', key: 'date', width: 30 },
-                { header: '單位/層級', key: 'unit', width: 20 },
-                { header: '地點', key: 'loc', width: 25 },
-                { header: '訓練項目', key: 'item', width: 40 },
-                { header: '辦理場次', key: 'session', width: 12 },
-                { header: '參與人數', key: 'people', width: 12 },
-                { header: '備註', key: 'note', width: 20 }
-            ] : [
-                { header: '項次', key: 'id', width: 8 },
-                { header: '日期', key: 'date', width: 35 },
-                { header: '訓練項目', key: 'item', width: 45 },
-                { header: '辦理場次', key: 'session', width: 15 },
-                { header: '參與人數', key: 'people', width: 15 }
-            ];
-
-            ws.getRow(1).eachCell(cell => {
-                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F2937' } };
-                cell.alignment = { horizontal: 'center', vertical: 'middle' };
-                cell.border = { top:{style:'thin'}, bottom:{style:'thin'}, left:{style:'thin'}, right:{style:'thin'} };
-            });
-
-            historyData.forEach((r, i) => {
-                const rowVal = { ...r, id: i + 1 };
-                ws.addRow(rowVal).eachCell(cell => {
-                    cell.alignment = { vertical: 'middle', horizontal: (cell.col >= ws.columns.length-1) ? 'center' : 'left' };
-                    if(cell.col === 1) cell.alignment = { horizontal: 'center' };
-                    cell.border = { top:{style:'thin'}, bottom:{style:'thin'}, left:{style:'thin'}, right:{style:'thin'} };
-                });
-            });
-
-            const lastRow = ws.addRow(isFull ? 
-                { item: '總計', session: $('#histTotalSession').innerText, people: $('#histTotalPeople').innerText } : 
-                { item: '總計', session: $('#histTotalSession').innerText, people: $('#histTotalPeople').innerText }
-            );
-            lastRow.eachCell(cell => {
-                cell.font = { bold: true, color: { argb: 'FFB91C1C' } };
-                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF7ED' } };
-                cell.border = { top:{style:'double'}, bottom:{style:'thick'} };
-                cell.alignment = { horizontal: 'center' };
-            });
-
-            const buf = await wb.xlsx.writeBuffer();
-            saveAs(new Blob([buf]), isFull ? '電動車訓練_完整資料庫.xlsx' : '電動車訓練_陳報統計表.xlsx');
+            ws.columns = isFull ? [{header:'項次',key:'id',width:8},{header:'日期',key:'date',width:30},{header:'單位',key:'unit',width:20},{header:'地點',key:'loc',width:25},{header:'訓練項目',key:'item',width:40},{header:'場次',key:'session',width:12},{header:'人數',key:'people',width:12},{header:'備註',key:'note',width:20}] : [{header:'項次',key:'id',width:8},{header:'日期',key:'date',width:35},{header:'訓練項目',key:'item',width:45},{header:'辦理場次',key:'session',width:15},{header:'參與人數',key:'people',width:15}];
+            ws.getRow(1).eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1F2937'}};});
+            historyData.forEach((r,i)=>{ ws.addRow({...r, id:i+1}); });
+            ws.addRow({item:'總計', session:$('#histTotalSession').innerText, people:$('#histTotalPeople').innerText}).eachCell(c=>{c.font={bold:true,color:{argb:'FFB91C1C'}};});
+            const buf = await wb.xlsx.writeBuffer(); saveAs(new Blob([buf]), '訓練統計.xlsx');
         }
     </script>
 </body>
