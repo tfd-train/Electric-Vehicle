@@ -22,17 +22,30 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
         body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f1f5f9; }
+        
         .sidebar-link { cursor: pointer; transition: all 0.2s; }
         .sidebar-link.active { background: rgba(37, 99, 235, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
         .sidebar-link:hover:not(.active) { background: #1e293b; color: white; }
-        /* 讓表格區塊自適應高度，預留分頁按鈕空間 */
-        .table-wrapper { overflow: auto; background: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); height: calc(100% - 60px); }
+        
+        /* 表格區塊樣式：確保高度正確並可捲動 */
+        .table-wrapper { 
+            overflow: auto; 
+            background: white; 
+            border-radius: 8px; 
+            border: 1px solid #e2e8f0; 
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); 
+            height: calc(100% - 60px); /* 扣掉分頁列的高度 */
+        }
+        
         table { width: 100%; min-width: 1100px; border-collapse: collapse; table-layout: fixed; }
         th { background: #f8fafc; color: #475569; font-weight: 700; padding: 10px; border: 1px solid #cbd5e1; font-size: 14px; position: sticky; top: 0; z-index: 10; }
         td { border: 1px solid #cbd5e1; height: 42px; padding: 0; vertical-align: middle; background: white; }
+        
         input[type="text"], input[type="number"] { width: 100%; height: 100%; border: none; text-align: center; outline: none; font-size: 14px; background: transparent; color: #334155; }
         input:focus { background: #eff6ff; box-shadow: inset 0 0 0 2px #3b82f6; }
+        
         .example-row td { background: #f1f5f9; color: #94a3b8; font-style: italic; font-size: 13px; text-align: center; pointer-events: none; user-select: none; }
+        
         .btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: 0.2s; font-size: 14px; }
         .btn-blue { background: #2563eb; color: white; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
         .btn-blue:hover { background: #1d4ed8; }
@@ -40,16 +53,19 @@
         .btn-green:hover { background: #047857; }
         .btn-white { background: white; border: 1px solid #cbd5e1; color: #475569; }
         .btn-white:hover { background: #f8fafc; border-color: #94a3b8; color: #2563eb; }
+        
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
         .day-cell { padding: 8px; text-align: center; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; font-size: 14px; background: white; }
         .day-cell:hover { background: #f1f5f9; }
         .day-cell.selected { background: #3b82f6; color: white; border-color: #2563eb; font-weight: bold; }
         .day-cell.weekend { color: #ef4444; }
         .day-cell.empty { border: none; background: transparent; cursor: default; }
+        
+        /* 確保 Loading 畫面有樣式，避免 Tailwind 載入失敗時版面全白 */
         #loading { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: none; justify-content: center; align-items: center; color: white; backdrop-filter: blur(2px); }
         .spinner { width: 40px; height: 40px; border: 4px solid #fff; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-    </script>
+    </style>
 </head>
 <body class="bg-slate-100 h-screen flex overflow-hidden">
     <div id="loading"><div class="spinner mb-4"></div><div class="font-bold text-lg">資料處理中...</div></div>
@@ -63,7 +79,7 @@
             <div onclick="switchPage('input')" id="nav-input" class="sidebar-link active px-4 py-3 rounded-xl flex items-center gap-3"><i class="ri-edit-2-line text-xl"></i> 新增作業區</div>
             <div onclick="switchPage('history')" id="nav-history" class="sidebar-link px-4 py-3 rounded-xl flex items-center gap-3"><i class="ri-database-2-line text-xl"></i> 歷史資料庫</div>
         </nav>
-        <!-- 移除舊版文字 -->
+        <!-- 已移除側邊欄底部文字 -->
     </aside>
 
     <main class="flex-1 flex flex-col h-full overflow-hidden relative">
@@ -129,7 +145,7 @@
                 </table>
             </div>
 
-            <!-- ★ 新增：分頁控制器 -->
+            <!-- 分頁控制器 -->
             <div class="h-[50px] flex items-center justify-between border-t border-slate-200 pt-2 mt-2">
                 <div class="text-sm text-slate-500">顯示第 <span id="pageInfoStart" class="font-bold text-slate-700">0</span> - <span id="pageInfoEnd" class="font-bold text-slate-700">0</span> 筆，共 <span id="pageInfoTotal" class="font-bold text-slate-700">0</span> 筆</div>
                 <div class="flex gap-2">
@@ -139,7 +155,7 @@
             </div>
         </div>
 
-        <!-- ★ 新增：頁尾 Footer -->
+        <!-- 頁尾 -->
         <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400">
             © 2025 電動車安全救援訓練統計系統 | 台北市政府消防局訓練中心
         </footer>
@@ -174,7 +190,6 @@
         let inputData = [], historyData = [], currentCalRow = null, selectedDates = new Set(), currentYear = 2025, currentMonth = 1;
         const builtInHolidays = {}; 
         
-        // ★ 分頁變數
         let currentPage = 1;
         const itemsPerPage = 15;
 
@@ -187,7 +202,7 @@
             $(`#page-${page}`).classList.remove('hidden');
         }
 
-        // ★ 核心修復：強制把 011X年 改回 11X年
+        // 年份格式修正 (0114 -> 114)
         function fixYearFormat(str) {
             if(!str) return "";
             return str.replace(/^0+(11\d)/, '$1'); 
@@ -221,7 +236,7 @@
             .then(res => res.json())
             .then(json => {
                 if (json.status === 'success') { alert('儲存成功！'); inputData=[]; addInputRow(); loadHistory(); } else alert('儲存失敗: ' + json.message);
-            }).catch(()=>alert('連線錯誤')).finally(() => $('#loading').style.display = 'none');
+            }).catch((err)=>{ console.error(err); alert('連線錯誤'); }).finally(() => $('#loading').style.display = 'none');
         }
 
         function downloadTemplate() {
@@ -262,19 +277,20 @@
 
         function loadHistory() {
             if(GAS_API_URL.includes("請填入")) return;
-            fetch(GAS_API_URL).then(r => r.json()).then(json => {
+            fetch(GAS_API_URL)
+            .then(r => r.json())
+            .then(json => {
                 if (json.status === 'success') {
                     historyData = json.data;
                     historyData.forEach(r => r.date = fixYearFormat(r.date));
                     historyData.sort((a, b) => getDateValue(b.date) - getDateValue(a.date));
-                    // 載入後重置到第一頁
                     currentPage = 1;
                     renderHistoryTable();
                 }
-            });
+            })
+            .catch(err => console.error("載入失敗", err));
         }
 
-        // ★ 分頁控制函式
         function changePage(delta) {
             const maxPage = Math.ceil(historyData.length / itemsPerPage);
             currentPage += delta;
@@ -283,31 +299,27 @@
             renderHistoryTable();
         }
 
-        // ★ 支援分頁的渲染函式
         function renderHistoryTable() {
             const tbody = $('#historyBody'); tbody.innerHTML = '';
             let tSession = 0, tPeople = 0;
             
-            // 先算總計 (全體資料)
             historyData.forEach(row => {
                 tSession += parseInt(row.session)||0; tPeople += parseInt(row.people)||0;
             });
             $('#histTotalSession').innerText = tSession; $('#histTotalPeople').innerText = tPeople;
 
-            // 計算分頁範圍
             const startIdx = (currentPage - 1) * itemsPerPage;
             const endIdx = startIdx + itemsPerPage;
             const pageData = historyData.slice(startIdx, endIdx);
 
             pageData.forEach((row, i) => {
-                const globalIndex = startIdx + i + 1; // 顯示全域項次
+                const globalIndex = startIdx + i + 1;
                 const tr = document.createElement('tr');
                 tr.className = i % 2 === 0 ? 'bg-white' : 'bg-slate-50';
                 tr.innerHTML = `<td class="text-center text-slate-500 font-mono text-xs">${globalIndex}</td><td class="px-2">${row.date}</td><td class="px-2 text-slate-600 text-sm">${row.unit}</td><td class="px-2 text-slate-600 text-sm">${row.loc}</td><td class="px-2">${row.item}</td><td class="text-center font-bold text-blue-600">${row.session}</td><td class="text-center font-bold text-emerald-600">${row.people}</td><td class="px-2 text-xs text-slate-400">${row.note}</td>`;
                 tbody.appendChild(tr);
             });
 
-            // 更新頁碼資訊
             $('#pageInfoStart').innerText = historyData.length > 0 ? startIdx + 1 : 0;
             $('#pageInfoEnd').innerText = Math.min(endIdx, historyData.length);
             $('#pageInfoTotal').innerText = historyData.length;
