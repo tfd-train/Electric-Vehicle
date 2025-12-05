@@ -14,7 +14,7 @@
 
     <script>
         // ==========================================
-        // ⚠️【請修改這裡】填入您的 Google Apps Script 網址
+        // ⚠️【請確認】這是您的 Google Apps Script 網址
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxSGcz4uNWBFzW86O6mcbHXFBac5S1sd7cwIzcw9n0tWgAjLUMF8XhtF8WA_QYJ5NSD/exec";
         // ==========================================
     </script>
@@ -27,8 +27,20 @@
         .sidebar-link.active { background: rgba(37, 99, 235, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
         .sidebar-link:hover:not(.active) { background: #1e293b; color: white; }
         
-        /* 表格樣式 */
+        /* ★ 關鍵修正：CSS 佈局設定 */
+        /* min-h-0 是 Flexbox 的救命符，防止內容撐破容器 */
+        .table-wrapper { 
+            flex: 1;            /* 佔滿剩餘空間 */
+            min-height: 0;      /* 允許縮小，不要被內容撐大 */
+            overflow-y: auto;   /* 垂直捲動 */
+            background: white; 
+            border-radius: 8px; 
+            border: 1px solid #e2e8f0; 
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); 
+        }
+        
         table { width: 100%; min-width: 1100px; border-collapse: collapse; table-layout: fixed; }
+        /* 表頭固定 */
         th { background: #f8fafc; color: #475569; font-weight: 700; padding: 10px; border: 1px solid #cbd5e1; font-size: 14px; position: sticky; top: 0; z-index: 10; }
         td { border: 1px solid #cbd5e1; height: 42px; padding: 0; vertical-align: middle; background: white; }
         
@@ -61,7 +73,7 @@
     <div id="loading"><div class="spinner mb-4"></div><div class="font-bold text-lg">資料處理中...</div></div>
 
     <!-- 側邊欄 -->
-    <aside class="w-64 bg-slate-900 text-white flex-col hidden md:flex shadow-2xl z-20">
+    <aside class="w-64 bg-slate-900 text-white flex-col hidden md:flex shadow-2xl z-20 shrink-0">
         <div class="p-6 border-b border-slate-800 flex items-center gap-3">
             <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg"><i class="ri-charging-pile-2-line text-xl"></i></div>
             <div><h1 class="font-bold text-lg tracking-wide">電動車訓練</h1><p class="text-xs text-slate-400">統計管理系統</p></div>
@@ -72,8 +84,8 @@
         </nav>
     </aside>
 
-    <!-- 主內容區 -->
-    <main class="flex-1 flex flex-col h-full overflow-hidden relative">
+    <!-- 主內容區 (Flex Column) -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative min-w-0">
         <!-- 手機版 Header -->
         <div class="md:hidden h-14 bg-white border-b flex items-center px-4 justify-between shrink-0">
             <div class="font-bold text-slate-800">電動車訓練統計</div>
@@ -89,6 +101,7 @@
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-6 bg-blue-600 rounded-full"></span>
                     <h2 class="text-xl font-bold text-slate-800">新增作業區</h2>
+                    <span class="text-sm text-slate-500 ml-2">(請在此輸入新資料，儲存後將送至雲端)</span>
                 </div>
                 <div class="flex gap-2">
                     <button class="btn btn-white" onclick="downloadTemplate()"><i class="ri-file-download-line"></i> 下載範本</button>
@@ -97,8 +110,8 @@
                 </div>
             </div>
             
-            <!-- 表格區：使用 Flexbox 自動填滿高度 -->
-            <div class="flex-1 overflow-auto bg-white border border-slate-200 rounded-lg shadow-sm min-h-0">
+            <!-- 表格區：flex-1 自動填滿 -->
+            <div class="table-wrapper">
                 <table id="inputTable">
                     <thead><tr><th style="width:50px">刪除</th><th style="width:50px">項次</th><th style="width:220px">日期 (支援智慧輸入)</th><th style="width:150px">單位/層級</th><th style="width:200px">地點</th><th style="width:200px">訓練項目</th><th style="width:80px">辦理<br>場次</th><th style="width:80px">參與<br>人數</th><th style="width:150px">備註</th></tr></thead>
                     <tbody id="inputBody"></tbody>
@@ -131,20 +144,21 @@
                 </div>
             </div>
             
+            <!-- 統計列 -->
             <div class="bg-emerald-50 border border-emerald-100 px-4 py-3 rounded-xl mb-4 flex gap-6 text-sm text-emerald-800 font-bold shadow-sm shrink-0">
                 <div><i class="ri-bar-chart-box-line text-lg mr-1"></i> 總場次：<span id="histTotalSession" class="text-xl">0</span> 場</div>
                 <div><i class="ri-group-line text-lg mr-1"></i> 總人數：<span id="histTotalPeople" class="text-xl">0</span> 人</div>
             </div>
 
-            <!-- 表格區：flex-1 自動填滿，overflow-auto 負責捲動 -->
-            <div class="flex-1 overflow-auto bg-white border border-slate-200 rounded-lg shadow-sm min-h-0">
+            <!-- ★ 關鍵修正：表格容器 (flex-1, min-h-0) -->
+            <div class="table-wrapper flex-1 min-h-0 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-sm mb-0">
                 <table id="historyTable">
                     <thead><tr><th style="width:60px">項次</th><th style="width:250px">日期</th><th style="width:150px">單位/層級</th><th style="width:200px">地點</th><th style="width:250px">訓練項目</th><th style="width:80px">辦理<br>場次</th><th style="width:80px">參與<br>人數</th><th style="width:150px">備註</th></tr></thead>
                     <tbody id="historyBody"></tbody>
                 </table>
             </div>
 
-            <!-- 分頁控制器：固定在底部 -->
+            <!-- ★ 分頁控制器 (shrink-0 固定底部) -->
             <div class="h-[60px] flex items-center justify-between border-t border-slate-200 pt-3 mt-2 shrink-0 bg-slate-100">
                 <div class="text-sm text-slate-500">顯示第 <span id="pageInfoStart" class="font-bold text-slate-700">0</span> - <span id="pageInfoEnd" class="font-bold text-slate-700">0</span> 筆，共 <span id="pageInfoTotal" class="font-bold text-slate-700">0</span> 筆</div>
                 <div class="flex gap-2">
@@ -157,7 +171,6 @@
 
     <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="processCSV(this)">
 
-    <!-- 日曆 Modal -->
     <div id="calendarModal" class="fixed inset-0 bg-black/50 hidden z-[1000] justify-center items-center backdrop-blur-sm">
         <div class="bg-white w-[350px] p-5 rounded-2xl shadow-2xl">
             <div class="flex justify-between items-center mb-2">
@@ -185,7 +198,7 @@
         let inputData = [], historyData = [], currentCalRow = null, selectedDates = new Set(), currentYear = 2025, currentMonth = 1;
         const builtInHolidays = {}; 
         
-        // 分頁設定
+        // ★ 分頁設定
         let currentPage = 1;
         const itemsPerPage = 20;
 
@@ -298,7 +311,6 @@
             $('#pageInfoStart').innerText = historyData.length > 0 ? startIdx + 1 : 0;
             $('#pageInfoEnd').innerText = Math.min(endIdx, historyData.length);
             $('#pageInfoTotal').innerText = historyData.length;
-            
             $('#prevBtn').disabled = currentPage === 1;
             $('#nextBtn').disabled = endIdx >= historyData.length;
         }
