@@ -27,12 +27,11 @@
         .sidebar-link.active { background: rgba(37, 99, 235, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
         .sidebar-link:hover:not(.active) { background: #1e293b; color: white; }
         
-        /* ★ 關鍵修正：表格容器 CSS 佈局 */
+        /* 表格樣式：確保捲軸正常 */
         .table-wrapper { 
-            flex: 1;             /* 佔滿剩餘高度 */
-            min-height: 0;       /* 允許縮小，防止撐爆父容器 */
-            overflow-y: auto;    /* 內容過多時出現垂直捲軸 */
-            overflow-x: auto;    /* 水平捲軸 */
+            flex: 1;            
+            min-height: 0;      
+            overflow: auto;     
             background: white; 
             border-radius: 8px; 
             border: 1px solid #e2e8f0; 
@@ -111,7 +110,6 @@
                 </div>
             </div>
             
-            <!-- 表格區 -->
             <div class="table-wrapper">
                 <table id="inputTable">
                     <thead><tr><th style="width:50px">刪除</th><th style="width:50px">項次</th><th style="width:220px">日期 (支援智慧輸入)</th><th style="width:150px">單位/層級</th><th style="width:200px">地點</th><th style="width:200px">訓練項目</th><th style="width:80px">辦理<br>場次</th><th style="width:80px">參與<br>人數</th><th style="width:150px">備註</th></tr></thead>
@@ -125,7 +123,7 @@
             </div>
         </div>
 
-        <!-- 頁面 B: 歷史資料庫 (佈局修正版) -->
+        <!-- 頁面 B: 歷史資料庫 -->
         <div id="page-history" class="hidden flex-col p-6 overflow-hidden h-full">
             <div class="flex justify-between items-center mb-4 shrink-0">
                 <div class="flex items-center gap-2">
@@ -133,20 +131,14 @@
                     <h2 class="text-xl font-bold text-slate-800">歷史資料庫</h2>
                     <span class="text-sm text-slate-500 ml-2">(包含所有已存檔資料)</span>
                 </div>
-                
-                <!-- 修正：按鈕分離，避免選單誤觸 -->
                 <div class="flex gap-2">
-                    <!-- 重新整理按鈕 (獨立) -->
                     <button class="btn btn-white" onclick="loadHistory()">
                         <i class="ri-refresh-line"></i> 重新整理
                     </button>
-                    
-                    <!-- 下載按鈕群組 (獨立) -->
                     <div class="relative group">
                         <button class="btn btn-green">
                             <i class="ri-file-excel-2-line"></i> 下載報表
                         </button>
-                        <!-- 下拉選單：修正位置與互動區域 -->
                         <div class="absolute right-0 top-full pt-2 w-56 hidden group-hover:block z-50">
                             <div class="bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden p-1">
                                 <div onclick="exportExcel('report')" class="px-4 py-3 hover:bg-emerald-50 rounded-lg cursor-pointer text-sm font-bold text-emerald-700 mb-1 flex items-center transition">
@@ -166,7 +158,6 @@
                 <div><i class="ri-group-line text-lg mr-1"></i> 總人數：<span id="histTotalPeople" class="text-xl">0</span> 人</div>
             </div>
 
-            <!-- 表格區：確保出現捲軸 -->
             <div class="table-wrapper flex-1 min-h-0 overflow-auto bg-white border border-slate-200 rounded-lg shadow-sm mb-0">
                 <table id="historyTable">
                     <thead><tr><th style="width:60px">項次</th><th style="width:250px">日期</th><th style="width:150px">單位/層級</th><th style="width:200px">地點</th><th style="width:250px">訓練項目</th><th style="width:80px">辦理<br>場次</th><th style="width:80px">參與<br>人數</th><th style="width:150px">備註</th></tr></thead>
@@ -174,7 +165,6 @@
                 </table>
             </div>
 
-            <!-- 分頁控制器：固定底部 -->
             <div class="h-[60px] flex items-center justify-between border-t border-slate-200 pt-3 mt-2 shrink-0 bg-slate-100">
                 <div class="text-sm text-slate-500">顯示第 <span id="pageInfoStart" class="font-bold text-slate-700">0</span> - <span id="pageInfoEnd" class="font-bold text-slate-700">0</span> 筆，共 <span id="pageInfoTotal" class="font-bold text-slate-700">0</span> 筆</div>
                 <div class="flex gap-2">
@@ -227,7 +217,7 @@
             $('#page-input').classList.add('hidden'); 
             $('#page-history').classList.remove('hidden'); 
             
-            // 關鍵修正：確保 history 頁面也是 flex col
+            // CSS 佈局修正
             if (page === 'history') {
                 $('#page-history').classList.remove('hidden');
                 $('#page-history').classList.add('flex');
@@ -259,27 +249,25 @@
         }
 
         function showLoading(msg) {
-            const ld = $('#loading');
-            const txt = $('#loadingText');
-            if(ld && txt) {
-                txt.innerText = msg;
-                ld.style.display = 'flex';
-            }
+            $('#loadingText').innerText = msg;
+            $('#loading').style.display = 'flex';
         }
         function hideLoading() {
-            const ld = $('#loading');
-            if(ld) ld.style.display = 'none';
+            $('#loading').style.display = 'none';
         }
 
         function saveToCloud() {
             const validData = inputData.filter(r => r.date || r.item || r.session);
             if (validData.length === 0) return alert('沒有資料可儲存');
+            
             validData.forEach(r => r.date = fixYearFormat(r.date));
-            showLoading('資料儲存中...');
+
+            showLoading("資料儲存中...");
             fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ data: validData, mode: 'append' }), headers: { 'Content-Type': 'text/plain' } })
             .then(res => res.json())
-            .then(json => { if (json.status === 'success') { alert('儲存成功！'); inputData=[]; addInputRow(); loadHistory(); } else alert('儲存失敗: ' + json.message); })
-            .catch((err)=>{ console.error(err); alert('連線錯誤'); }).finally(() => hideLoading());
+            .then(json => {
+                if (json.status === 'success') { alert('儲存成功！'); inputData=[]; addInputRow(); loadHistory(); } else alert('儲存失敗: ' + json.message);
+            }).catch((err)=>{ console.error(err); alert('連線錯誤'); }).finally(() => hideLoading());
         }
 
         function downloadTemplate() {
@@ -292,7 +280,10 @@
             Papa.parse(input.files[0], { header: true, skipEmptyLines: true, complete: function (res) {
                 const imp = res.data; let count = 0;
                 imp.forEach(r => {
-                    const rowStr = JSON.stringify(r); if (rowStr.includes("總計") || rowStr.includes("合計")) return; 
+                    const rowStr = JSON.stringify(r); 
+                    // ★ 防呆：過濾 總計/合計/範例
+                    if (rowStr.includes("總計") || rowStr.includes("合計") || rowStr.includes("範例")) return; 
+                    
                     const get = (keys) => { for(let k of Object.keys(r)) if(keys.some(key=>k.includes(key))) return r[k]; return ''; };
                     let cleanDate = fixYearFormat(get(['日期','Date']));
                     inputData.push({ date: cleanDate, unit: get(['單位','Unit']), loc: get(['地點','Loc']), item: get(['項目','Item']), session: get(['場次','Session']), people: get(['人數','Peo']), note: get(['備註']) });
