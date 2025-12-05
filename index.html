@@ -27,18 +27,18 @@
         .sidebar-link.active { background: rgba(37, 99, 235, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
         .sidebar-link:hover:not(.active) { background: #1e293b; color: white; }
         
-        /* ★ 關鍵修正：回歸標準 Flexbox 寫法，保證相容性 */
+        /* ★ 關鍵修正：表格容器 CSS 佈局 */
         .table-wrapper { 
-            flex: 1;            /* 自動填滿剩餘高度 */
-            min-height: 0;      /* 允許容器縮小 (產生捲軸的關鍵) */
-            overflow: auto;     /* 同時開啟垂直與水平捲動 */
+            flex: 1;             /* 佔滿剩餘高度 */
+            min-height: 0;       /* 允許縮小，防止撐爆父容器 */
+            overflow-y: auto;    /* 內容過多時出現垂直捲軸 */
+            overflow-x: auto;    /* 水平捲軸 */
             background: white; 
             border-radius: 8px; 
             border: 1px solid #e2e8f0; 
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); 
         }
         
-        /* 表格寬度設定，確保手機版也能滑動 */
         table { width: 100%; min-width: 1100px; border-collapse: collapse; table-layout: fixed; }
         th { background: #f8fafc; color: #475569; font-weight: 700; padding: 10px; border: 1px solid #cbd5e1; font-size: 14px; position: sticky; top: 0; z-index: 10; }
         td { border: 1px solid #cbd5e1; height: 42px; padding: 0; vertical-align: middle; background: white; }
@@ -69,7 +69,6 @@
     </style>
 </head>
 <body class="bg-slate-100 h-screen flex overflow-hidden">
-    <!-- Loading 畫面 (動態文字) -->
     <div id="loading">
         <div class="spinner mb-4"></div>
         <div class="font-bold text-lg" id="loadingText">資料處理中...</div>
@@ -82,8 +81,8 @@
             <div><h1 class="font-bold text-lg tracking-wide">電動車訓練</h1><p class="text-xs text-slate-400">統計管理系統</p></div>
         </div>
         <nav class="flex-1 p-4 space-y-2">
-            <div onclick="switchPage('input')" id="nav-input" class="sidebar-link active px-4 py-3 rounded-xl flex items-center gap-3"><i class="ri-edit-2-line text-xl"></i> 新增作業區</div>
-            <div onclick="switchPage('history')" id="nav-history" class="sidebar-link px-4 py-3 rounded-xl flex items-center gap-3"><i class="ri-database-2-line text-xl"></i> 歷史資料庫</div>
+            <div onclick="switchPage('input')" id="nav-input" class="sidebar-link active px-4 py-3 rounded-xl flex items-center gap-3 cursor-pointer"><i class="ri-edit-2-line text-xl"></i> 新增作業區</div>
+            <div onclick="switchPage('history')" id="nav-history" class="sidebar-link px-4 py-3 rounded-xl flex items-center gap-3 cursor-pointer"><i class="ri-database-2-line text-xl"></i> 歷史資料庫</div>
         </nav>
     </aside>
 
@@ -112,6 +111,7 @@
                 </div>
             </div>
             
+            <!-- 表格區 -->
             <div class="table-wrapper">
                 <table id="inputTable">
                     <thead><tr><th style="width:50px">刪除</th><th style="width:50px">項次</th><th style="width:220px">日期 (支援智慧輸入)</th><th style="width:150px">單位/層級</th><th style="width:200px">地點</th><th style="width:200px">訓練項目</th><th style="width:80px">辦理<br>場次</th><th style="width:80px">參與<br>人數</th><th style="width:150px">備註</th></tr></thead>
@@ -125,21 +125,37 @@
             </div>
         </div>
 
-        <!-- 頁面 B: 歷史資料庫 -->
-        <div id="page-history" class="hidden flex-1 flex-col p-6 overflow-hidden h-full">
+        <!-- 頁面 B: 歷史資料庫 (佈局修正版) -->
+        <div id="page-history" class="hidden flex-col p-6 overflow-hidden h-full">
             <div class="flex justify-between items-center mb-4 shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-6 bg-emerald-600 rounded-full"></span>
                     <h2 class="text-xl font-bold text-slate-800">歷史資料庫</h2>
                     <span class="text-sm text-slate-500 ml-2">(包含所有已存檔資料)</span>
                 </div>
-                <div class="flex gap-2 relative group">
-                    <button class="btn btn-white" onclick="loadHistory()"><i class="ri-refresh-line"></i> 重新整理</button>
-                    <div class="relative">
-                        <button class="btn btn-green"><i class="ri-file-excel-2-line"></i> 下載報表</button>
-                        <div class="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 hidden group-hover:block z-50 p-2">
-                            <div onclick="exportExcel('report')" class="px-4 py-3 hover:bg-emerald-50 rounded-lg cursor-pointer text-sm font-bold text-emerald-700 mb-1"><i class="ri-file-list-3-line mr-2"></i>陳報上級版 (精簡)</div>
-                            <div onclick="exportExcel('full')" class="px-4 py-3 hover:bg-slate-50 rounded-lg cursor-pointer text-sm text-slate-600"><i class="ri-database-2-line mr-2"></i>完整資料庫 (備份)</div>
+                
+                <!-- 修正：按鈕分離，避免選單誤觸 -->
+                <div class="flex gap-2">
+                    <!-- 重新整理按鈕 (獨立) -->
+                    <button class="btn btn-white" onclick="loadHistory()">
+                        <i class="ri-refresh-line"></i> 重新整理
+                    </button>
+                    
+                    <!-- 下載按鈕群組 (獨立) -->
+                    <div class="relative group">
+                        <button class="btn btn-green">
+                            <i class="ri-file-excel-2-line"></i> 下載報表
+                        </button>
+                        <!-- 下拉選單：修正位置與互動區域 -->
+                        <div class="absolute right-0 top-full pt-2 w-56 hidden group-hover:block z-50">
+                            <div class="bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden p-1">
+                                <div onclick="exportExcel('report')" class="px-4 py-3 hover:bg-emerald-50 rounded-lg cursor-pointer text-sm font-bold text-emerald-700 mb-1 flex items-center transition">
+                                    <i class="ri-file-list-3-line mr-2 text-lg"></i>陳報上級版 (精簡)
+                                </div>
+                                <div onclick="exportExcel('full')" class="px-4 py-3 hover:bg-slate-50 rounded-lg cursor-pointer text-sm text-slate-600 flex items-center transition">
+                                    <i class="ri-database-2-line mr-2 text-lg"></i>完整資料庫 (備份)
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -150,15 +166,15 @@
                 <div><i class="ri-group-line text-lg mr-1"></i> 總人數：<span id="histTotalPeople" class="text-xl">0</span> 人</div>
             </div>
 
-            <!-- 表格區：flex-1 + min-h-0 + overflow-auto (確保捲軸出現) -->
-            <div class="table-wrapper">
+            <!-- 表格區：確保出現捲軸 -->
+            <div class="table-wrapper flex-1 min-h-0 overflow-auto bg-white border border-slate-200 rounded-lg shadow-sm mb-0">
                 <table id="historyTable">
                     <thead><tr><th style="width:60px">項次</th><th style="width:250px">日期</th><th style="width:150px">單位/層級</th><th style="width:200px">地點</th><th style="width:250px">訓練項目</th><th style="width:80px">辦理<br>場次</th><th style="width:80px">參與<br>人數</th><th style="width:150px">備註</th></tr></thead>
                     <tbody id="historyBody"></tbody>
                 </table>
             </div>
 
-            <!-- 分頁控制器 (置底) -->
+            <!-- 分頁控制器：固定底部 -->
             <div class="h-[60px] flex items-center justify-between border-t border-slate-200 pt-3 mt-2 shrink-0 bg-slate-100">
                 <div class="text-sm text-slate-500">顯示第 <span id="pageInfoStart" class="font-bold text-slate-700">0</span> - <span id="pageInfoEnd" class="font-bold text-slate-700">0</span> 筆，共 <span id="pageInfoTotal" class="font-bold text-slate-700">0</span> 筆</div>
                 <div class="flex gap-2">
@@ -167,12 +183,10 @@
                 </div>
             </div>
         </div>
-        <!-- 已移除頁尾 -->
     </main>
 
     <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="processCSV(this)">
 
-    <!-- 日曆 Modal -->
     <div id="calendarModal" class="fixed inset-0 bg-black/50 hidden z-[1000] justify-center items-center backdrop-blur-sm">
         <div class="bg-white w-[350px] p-5 rounded-2xl shadow-2xl">
             <div class="flex justify-between items-center mb-2">
@@ -198,9 +212,7 @@
     <script>
         const $ = (s) => document.querySelector(s);
         let inputData = [], historyData = [], currentCalRow = null, selectedDates = new Set(), currentYear = 2025, currentMonth = 1;
-        const builtInHolidays = {}; 
         
-        // 分頁設定
         let currentPage = 1;
         const itemsPerPage = 20;
 
@@ -212,7 +224,18 @@
         function switchPage(page) {
             document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
             if(document.getElementById(`nav-${page}`)) document.getElementById(`nav-${page}`).classList.add('active');
-            $('#page-input').classList.add('hidden'); $('#page-history').classList.add('hidden');
+            $('#page-input').classList.add('hidden'); 
+            $('#page-history').classList.remove('hidden'); 
+            
+            // 關鍵修正：確保 history 頁面也是 flex col
+            if (page === 'history') {
+                $('#page-history').classList.remove('hidden');
+                $('#page-history').classList.add('flex');
+            } else {
+                $('#page-history').classList.add('hidden');
+                $('#page-history').classList.remove('flex');
+            }
+            
             $(`#page-${page}`).classList.remove('hidden');
         }
 
@@ -236,25 +259,27 @@
         }
 
         function showLoading(msg) {
-            $('#loadingText').innerText = msg;
-            $('#loading').style.display = 'flex';
+            const ld = $('#loading');
+            const txt = $('#loadingText');
+            if(ld && txt) {
+                txt.innerText = msg;
+                ld.style.display = 'flex';
+            }
         }
         function hideLoading() {
-            $('#loading').style.display = 'none';
+            const ld = $('#loading');
+            if(ld) ld.style.display = 'none';
         }
 
         function saveToCloud() {
             const validData = inputData.filter(r => r.date || r.item || r.session);
             if (validData.length === 0) return alert('沒有資料可儲存');
-            
             validData.forEach(r => r.date = fixYearFormat(r.date));
-
-            showLoading("資料儲存中...");
+            showLoading('資料儲存中...');
             fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ data: validData, mode: 'append' }), headers: { 'Content-Type': 'text/plain' } })
             .then(res => res.json())
-            .then(json => {
-                if (json.status === 'success') { alert('儲存成功！'); inputData=[]; addInputRow(); loadHistory(); } else alert('儲存失敗: ' + json.message);
-            }).catch((err)=>{ console.error(err); alert('連線錯誤'); }).finally(() => hideLoading());
+            .then(json => { if (json.status === 'success') { alert('儲存成功！'); inputData=[]; addInputRow(); loadHistory(); } else alert('儲存失敗: ' + json.message); })
+            .catch((err)=>{ console.error(err); alert('連線錯誤'); }).finally(() => hideLoading());
         }
 
         function downloadTemplate() {
@@ -287,7 +312,7 @@
 
         function loadHistory() {
             if(GAS_API_URL.includes("請填入")) return;
-            showLoading("資料讀取中...");
+            showLoading('資料讀取中...');
             fetch(GAS_API_URL).then(r => r.json()).then(json => {
                 if (json.status === 'success') {
                     historyData = json.data;
