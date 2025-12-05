@@ -23,28 +23,10 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
         body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f1f5f9; }
         
+        /* 側邊欄與按鈕樣式 */
         .sidebar-link { cursor: pointer; transition: all 0.2s; }
         .sidebar-link.active { background: rgba(37, 99, 235, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
         .sidebar-link:hover:not(.active) { background: #1e293b; color: white; }
-        
-        /* 表格區塊樣式：彈性伸縮，確保分頁列在底部 */
-        .table-wrapper { 
-            flex: 1;
-            overflow: auto; 
-            background: white; 
-            border-radius: 8px; 
-            border: 1px solid #e2e8f0; 
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); 
-        }
-        
-        table { width: 100%; min-width: 1100px; border-collapse: collapse; table-layout: fixed; }
-        th { background: #f8fafc; color: #475569; font-weight: 700; padding: 10px; border: 1px solid #cbd5e1; font-size: 14px; position: sticky; top: 0; z-index: 10; }
-        td { border: 1px solid #cbd5e1; height: 42px; padding: 0; vertical-align: middle; background: white; }
-        
-        input[type="text"], input[type="number"] { width: 100%; height: 100%; border: none; text-align: center; outline: none; font-size: 14px; background: transparent; color: #334155; }
-        input:focus { background: #eff6ff; box-shadow: inset 0 0 0 2px #3b82f6; }
-        
-        .example-row td { background: #f1f5f9; color: #94a3b8; font-style: italic; font-size: 13px; text-align: center; pointer-events: none; user-select: none; }
         
         .btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: 0.2s; font-size: 14px; }
         .btn-blue { background: #2563eb; color: white; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
@@ -53,7 +35,17 @@
         .btn-green:hover { background: #047857; }
         .btn-white { background: white; border: 1px solid #cbd5e1; color: #475569; }
         .btn-white:hover { background: #f8fafc; border-color: #94a3b8; color: #2563eb; }
+
+        /* 表格樣式 */
+        table { width: 100%; min-width: 1100px; border-collapse: collapse; table-layout: fixed; }
+        th { background: #f8fafc; color: #475569; font-weight: 700; padding: 10px; border: 1px solid #cbd5e1; font-size: 14px; position: sticky; top: 0; z-index: 10; }
+        td { border: 1px solid #cbd5e1; height: 42px; padding: 0; vertical-align: middle; background: white; }
         
+        input[type="text"], input[type="number"] { width: 100%; height: 100%; border: none; text-align: center; outline: none; font-size: 14px; background: transparent; color: #334155; }
+        input:focus { background: #eff6ff; box-shadow: inset 0 0 0 2px #3b82f6; }
+        .example-row td { background: #f1f5f9; color: #94a3b8; font-style: italic; font-size: 13px; text-align: center; pointer-events: none; user-select: none; }
+        
+        /* 日曆樣式 */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
         .day-cell { padding: 8px; text-align: center; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; font-size: 14px; background: white; }
         .day-cell:hover { background: #f1f5f9; }
@@ -69,6 +61,7 @@
 <body class="bg-slate-100 h-screen flex overflow-hidden">
     <div id="loading"><div class="spinner mb-4"></div><div class="font-bold text-lg">資料處理中...</div></div>
 
+    <!-- 側邊欄 -->
     <aside class="w-64 bg-slate-900 text-white flex-col hidden md:flex shadow-2xl z-20">
         <div class="p-6 border-b border-slate-800 flex items-center gap-3">
             <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg"><i class="ri-charging-pile-2-line text-xl"></i></div>
@@ -78,11 +71,13 @@
             <div onclick="switchPage('input')" id="nav-input" class="sidebar-link active px-4 py-3 rounded-xl flex items-center gap-3"><i class="ri-edit-2-line text-xl"></i> 新增作業區</div>
             <div onclick="switchPage('history')" id="nav-history" class="sidebar-link px-4 py-3 rounded-xl flex items-center gap-3"><i class="ri-database-2-line text-xl"></i> 歷史資料庫</div>
         </nav>
-        <div class="p-4 border-t border-slate-800 text-center text-xs text-slate-500">僅供內部使用 v2.0</div>
+        <!-- 已移除底部文字 -->
     </aside>
 
+    <!-- 主內容區 (Flex 垂直排列，禁止外層捲動) -->
     <main class="flex-1 flex flex-col h-full overflow-hidden relative">
-        <div class="md:hidden h-14 bg-white border-b flex items-center px-4 justify-between">
+        <!-- 手機版 Header -->
+        <div class="md:hidden h-14 bg-white border-b flex items-center px-4 justify-between shrink-0">
             <div class="font-bold text-slate-800">電動車訓練統計</div>
             <div class="flex gap-4">
                 <button onclick="switchPage('input')" class="text-blue-600"><i class="ri-edit-2-line"></i></button>
@@ -90,12 +85,12 @@
             </div>
         </div>
 
-        <div id="page-input" class="flex-1 flex flex-col p-6 overflow-hidden">
-            <div class="flex justify-between items-center mb-4">
+        <!-- 新增作業區 -->
+        <div id="page-input" class="flex-1 flex flex-col p-6 overflow-hidden h-full">
+            <div class="flex justify-between items-center mb-4 shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-6 bg-blue-600 rounded-full"></span>
                     <h2 class="text-xl font-bold text-slate-800">新增作業區</h2>
-                    <span class="text-sm text-slate-500 ml-2">(請在此輸入新資料，儲存後將送至雲端)</span>
                 </div>
                 <div class="flex gap-2">
                     <button class="btn btn-white" onclick="downloadTemplate()"><i class="ri-file-download-line"></i> 下載範本</button>
@@ -103,62 +98,66 @@
                     <button class="btn btn-blue" onclick="saveToCloud()"><i class="ri-cloud-upload-line"></i> 儲存至雲端</button>
                 </div>
             </div>
-            <div class="table-wrapper flex-1">
+            <!-- 表格容器：自動伸縮，內部捲動 -->
+            <div class="table-wrapper flex-1 overflow-auto bg-white border border-slate-200 rounded-lg shadow-sm min-h-0">
                 <table id="inputTable">
-                    <thead><tr><th style="width:50px">刪除</th><th style="width:50px">項次</th><th style="width:220px">日期 (支援智慧輸入)</th><th style="width:150px">單位/層級</th><th style="width:200px">地點</th><th style="width:200px">訓練項目</th><th style="width:80px">辦理<br>場次</th><th style="width:80px">參與<br>人數</th><th style="width:150px">備註</th></tr></thead>
+                    <thead><tr><th style="width:50px">刪除</th><th style="width:50px">項次</th><th style="width:220px">日期</th><th style="width:150px">單位/層級</th><th style="width:200px">地點</th><th style="width:200px">訓練項目</th><th style="width:80px">辦理<br>場次</th><th style="width:80px">參與<br>人數</th><th style="width:150px">備註</th></tr></thead>
                     <tbody id="inputBody"></tbody>
-                    <tfoot class="example-row"><tr><td></td><td>Ex</td><td>114年1月1、2日</td><td>信義中隊</td><td>地下停車場</td><td>滅火毯操作</td><td>1</td><td>20</td><td>(範例格式)</td></tr></tfoot>
+                    <tfoot class="example-row"><tr><td></td><td>Ex</td><td>114年1月1、2日</td><td>信義中隊</td><td>地下停車場</td><td>滅火毯操作</td><td>1</td><td>20</td><td>(範例)</td></tr></tfoot>
                 </table>
             </div>
-            <div class="mt-4 flex justify-center"><button class="btn btn-white w-full md:w-auto justify-center shadow-sm" onclick="addInputRow()"><i class="ri-add-line text-lg"></i> 新增一列</button></div>
+            <div class="mt-4 flex justify-center shrink-0"><button class="btn btn-white w-full md:w-auto justify-center shadow-sm" onclick="addInputRow()"><i class="ri-add-line text-lg"></i> 新增一列</button></div>
         </div>
 
+        <!-- 歷史資料庫 (修正版面配置) -->
         <div id="page-history" class="hidden flex-1 flex-col p-6 overflow-hidden h-full">
+            <!-- 頂部工具列 -->
             <div class="flex justify-between items-center mb-4 shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-6 bg-emerald-600 rounded-full"></span>
                     <h2 class="text-xl font-bold text-slate-800">歷史資料庫</h2>
-                    <span class="text-sm text-slate-500 ml-2">(包含所有已存檔資料)</span>
                 </div>
                 <div class="flex gap-2 relative group">
                     <button class="btn btn-white" onclick="loadHistory()"><i class="ri-refresh-line"></i> 重新整理</button>
                     <div class="relative">
                         <button class="btn btn-green"><i class="ri-file-excel-2-line"></i> 下載報表</button>
                         <div class="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 hidden group-hover:block z-50 p-2">
-                            <div onclick="exportExcel('report')" class="px-4 py-3 hover:bg-emerald-50 rounded-lg cursor-pointer text-sm font-bold text-emerald-700 mb-1"><i class="ri-file-list-3-line mr-2"></i>陳報上級版 (精簡)</div>
-                            <div onclick="exportExcel('full')" class="px-4 py-3 hover:bg-slate-50 rounded-lg cursor-pointer text-sm text-slate-600"><i class="ri-database-2-line mr-2"></i>完整資料庫 (備份)</div>
+                            <div onclick="exportExcel('report')" class="px-4 py-3 hover:bg-emerald-50 rounded-lg cursor-pointer text-sm font-bold text-emerald-700 mb-1"><i class="ri-file-list-3-line mr-2"></i>陳報上級版</div>
+                            <div onclick="exportExcel('full')" class="px-4 py-3 hover:bg-slate-50 rounded-lg cursor-pointer text-sm text-slate-600"><i class="ri-database-2-line mr-2"></i>完整資料庫</div>
                         </div>
                     </div>
                 </div>
             </div>
             
+            <!-- 統計列 -->
             <div class="bg-emerald-50 border border-emerald-100 px-4 py-3 rounded-xl mb-4 flex gap-6 text-sm text-emerald-800 font-bold shadow-sm shrink-0">
                 <div><i class="ri-bar-chart-box-line text-lg mr-1"></i> 總場次：<span id="histTotalSession" class="text-xl">0</span> 場</div>
                 <div><i class="ri-group-line text-lg mr-1"></i> 總人數：<span id="histTotalPeople" class="text-xl">0</span> 人</div>
             </div>
 
-            <!-- 表格區：flex-1 自動填滿 -->
-            <div class="table-wrapper">
+            <!-- ★ 關鍵修正：表格容器設定 -->
+            <!-- flex-1: 佔滿剩餘高度, min-h-0: 允許縮小(關鍵), overflow-auto: 內部捲動 -->
+            <div class="flex-1 overflow-auto bg-white border border-slate-200 rounded-lg shadow-sm min-h-0 mb-0">
                 <table id="historyTable">
                     <thead><tr><th style="width:60px">項次</th><th style="width:250px">日期</th><th style="width:150px">單位/層級</th><th style="width:200px">地點</th><th style="width:250px">訓練項目</th><th style="width:80px">辦理<br>場次</th><th style="width:80px">參與<br>人數</th><th style="width:150px">備註</th></tr></thead>
                     <tbody id="historyBody"></tbody>
                 </table>
             </div>
 
-            <!-- ★ 分頁控制器 (置底) -->
-            <div class="h-[60px] flex items-center justify-between border-t border-slate-200 pt-3 mt-2 shrink-0 bg-slate-100">
+            <!-- ★ 分頁控制器 (固定底部) -->
+            <div class="h-[50px] flex items-center justify-between border-t border-slate-200 pt-2 mt-2 shrink-0 bg-slate-100">
                 <div class="text-sm text-slate-500">顯示第 <span id="pageInfoStart" class="font-bold text-slate-700">0</span> - <span id="pageInfoEnd" class="font-bold text-slate-700">0</span> 筆，共 <span id="pageInfoTotal" class="font-bold text-slate-700">0</span> 筆</div>
                 <div class="flex gap-2">
-                    <button onclick="changePage(-1)" id="prevBtn" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition"><i class="ri-arrow-left-s-line"></i> 上一頁</button>
-                    <button onclick="changePage(1)" id="nextBtn" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition">下一頁 <i class="ri-arrow-right-s-line"></i></button>
+                    <button onclick="changePage(-1)" id="prevBtn" class="px-3 py-1 bg-white border border-slate-300 rounded text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition"><i class="ri-arrow-left-s-line"></i> 上一頁</button>
+                    <button onclick="changePage(1)" id="nextBtn" class="px-3 py-1 bg-white border border-slate-300 rounded text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition">下一頁 <i class="ri-arrow-right-s-line"></i></button>
                 </div>
             </div>
         </div>
-        <!-- 頁尾已移除 -->
     </main>
 
     <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="processCSV(this)">
 
+    <!-- 日曆 Modal -->
     <div id="calendarModal" class="fixed inset-0 bg-black/50 hidden z-[1000] justify-center items-center backdrop-blur-sm">
         <div class="bg-white w-[350px] p-5 rounded-2xl shadow-2xl">
             <div class="flex justify-between items-center mb-2">
@@ -186,7 +185,7 @@
         let inputData = [], historyData = [], currentCalRow = null, selectedDates = new Set(), currentYear = 2025, currentMonth = 1;
         const builtInHolidays = {}; 
         
-        // ★ 分頁變數：設定為 20 筆
+        // ★ 分頁設定 (每頁 20 筆)
         let currentPage = 1;
         const itemsPerPage = 20;
 
@@ -199,11 +198,7 @@
             $(`#page-${page}`).classList.remove('hidden');
         }
 
-        // 年份格式修正
-        function fixYearFormat(str) {
-            if(!str) return "";
-            return str.replace(/^0+(11\d)/, '$1'); 
-        }
+        function fixYearFormat(str) { if(!str) return ""; return str.replace(/^0+(11\d)/, '$1'); }
 
         function addInputRow(data={}) {
             inputData.push({ date: data.date||'', unit: data.unit||'', loc: data.loc||'', item: data.item||'', session: data.session||'', people: data.people||'', note: data.note||'' });
@@ -225,15 +220,12 @@
         function saveToCloud() {
             const validData = inputData.filter(r => r.date || r.item || r.session);
             if (validData.length === 0) return alert('沒有資料可儲存');
-            
             validData.forEach(r => r.date = fixYearFormat(r.date));
-
             $('#loading').style.display = 'flex';
             fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ data: validData, mode: 'append' }), headers: { 'Content-Type': 'text/plain' } })
             .then(res => res.json())
-            .then(json => {
-                if (json.status === 'success') { alert('儲存成功！'); inputData=[]; addInputRow(); loadHistory(); } else alert('儲存失敗: ' + json.message);
-            }).catch((err)=>{ console.error(err); alert('連線錯誤'); }).finally(() => $('#loading').style.display = 'none');
+            .then(json => { if (json.status === 'success') { alert('儲存成功！'); inputData=[]; addInputRow(); loadHistory(); } else alert('儲存失敗: ' + json.message); })
+            .catch(()=>alert('連線錯誤')).finally(() => $('#loading').style.display = 'none');
         }
 
         function downloadTemplate() {
@@ -244,16 +236,11 @@
         function processCSV(input) {
             if (!input.files[0]) return;
             Papa.parse(input.files[0], { header: true, skipEmptyLines: true, complete: function (res) {
-                const imp = res.data;
-                let count = 0;
+                const imp = res.data; let count = 0;
                 imp.forEach(r => {
-                    const rowStr = JSON.stringify(r);
-                    if (rowStr.includes("總計") || rowStr.includes("合計")) return; 
-
+                    const rowStr = JSON.stringify(r); if (rowStr.includes("總計") || rowStr.includes("合計")) return; 
                     const get = (keys) => { for(let k of Object.keys(r)) if(keys.some(key=>k.includes(key))) return r[k]; return ''; };
-                    let rawDate = get(['日期','Date']);
-                    let cleanDate = fixYearFormat(rawDate);
-
+                    let cleanDate = fixYearFormat(get(['日期','Date']));
                     inputData.push({ date: cleanDate, unit: get(['單位','Unit']), loc: get(['地點','Loc']), item: get(['項目','Item']), session: get(['場次','Session']), people: get(['人數','Peo']), note: get(['備註']) });
                     count++;
                 });
@@ -265,18 +252,13 @@
             if (!dateStr) return 0;
             const cleanStr = fixYearFormat(dateStr);
             const m = cleanStr.match(/(\d+)年(\d+)月(\d+)/);
-            if (m) {
-                let y = parseInt(m[1]); let month = parseInt(m[2]); let day = parseInt(m[3]);
-                return y * 10000 + month * 100 + day;
-            }
+            if (m) { let y = parseInt(m[1]); let month = parseInt(m[2]); let day = parseInt(m[3]); return y * 10000 + month * 100 + day; }
             return 0;
         }
 
         function loadHistory() {
             if(GAS_API_URL.includes("請填入")) return;
-            fetch(GAS_API_URL)
-            .then(r => r.json())
-            .then(json => {
+            fetch(GAS_API_URL).then(r => r.json()).then(json => {
                 if (json.status === 'success') {
                     historyData = json.data;
                     historyData.forEach(r => r.date = fixYearFormat(r.date));
@@ -284,8 +266,7 @@
                     currentPage = 1;
                     renderHistoryTable();
                 }
-            })
-            .catch(err => console.error("載入失敗", err));
+            });
         }
 
         function changePage(delta) {
@@ -299,14 +280,9 @@
         function renderHistoryTable() {
             const tbody = $('#historyBody'); tbody.innerHTML = '';
             let tSession = 0, tPeople = 0;
-            
-            // 算總計
-            historyData.forEach(row => {
-                tSession += parseInt(row.session)||0; tPeople += parseInt(row.people)||0;
-            });
+            historyData.forEach(row => { tSession += parseInt(row.session)||0; tPeople += parseInt(row.people)||0; });
             $('#histTotalSession').innerText = tSession; $('#histTotalPeople').innerText = tPeople;
 
-            // 分頁邏輯
             const startIdx = (currentPage - 1) * itemsPerPage;
             const endIdx = startIdx + itemsPerPage;
             const pageData = historyData.slice(startIdx, endIdx);
@@ -319,11 +295,9 @@
                 tbody.appendChild(tr);
             });
 
-            // 更新分頁資訊
             $('#pageInfoStart').innerText = historyData.length > 0 ? startIdx + 1 : 0;
             $('#pageInfoEnd').innerText = Math.min(endIdx, historyData.length);
             $('#pageInfoTotal').innerText = historyData.length;
-            
             $('#prevBtn').disabled = currentPage === 1;
             $('#nextBtn').disabled = endIdx >= historyData.length;
         }
