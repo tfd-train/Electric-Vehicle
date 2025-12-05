@@ -15,7 +15,7 @@
     <script>
         // ==========================================
         // ⚠️【請修改這裡】填入您的 Google Apps Script 網址
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxBfiVAahD0M9G-MYdfSu8oZ-QfR69ju1BGO55fJUc4HPOC6hJwkk_VrnMs79yaDnXz/exec";
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxbAAa5_8qKFUyGNSbpl5jOQimeRS3bDpYaeZQXJcsuAPq9QQu0dlzT6dxeMnA9Moxk/exec";
         // ==========================================
     </script>
 
@@ -27,10 +27,10 @@
         .sidebar-link.active { background: rgba(37, 99, 235, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
         .sidebar-link:hover:not(.active) { background: #1e293b; color: white; }
         
-        /* 表格樣式：確保捲軸正常 */
+        /* ★ 表格容器：Flexbox 自動伸縮，確保捲軸出現且不卡死 */
         .table-wrapper { 
             flex: 1;            
-            min-height: 0;      
+            min-height: 0;      /* 關鍵：允許縮小 */
             overflow: auto;     
             background: white; 
             border-radius: 8px; 
@@ -91,7 +91,6 @@
 
     <!-- 主內容區 -->
     <main class="flex-1 flex flex-col h-full overflow-hidden relative min-w-0">
-        <!-- 手機版 Header -->
         <div class="md:hidden h-14 bg-white border-b flex items-center px-4 justify-between shrink-0">
             <div class="font-bold text-slate-800">電動車訓練統計</div>
             <div class="flex gap-4">
@@ -107,7 +106,7 @@
                     <span class="w-1 h-6 bg-blue-600 rounded-full"></span>
                     <div>
                         <h2 class="text-xl font-bold text-slate-800">新增作業區</h2>
-                        <p class="text-xs text-rose-600 font-bold mt-0.5">※ 注意：參與人數請填寫「該次訓練所有梯次的總和」，系統不會自動加總。</p>
+                        <p class="text-xs text-rose-600 font-bold mt-0.5">※ 注意：參與人數請填寫「該次訓練所有梯次的總和」。</p>
                     </div>
                 </div>
                 <div class="flex gap-2">
@@ -123,17 +122,17 @@
                         <tr>
                             <th style="width:50px">刪除</th>
                             <th style="width:50px">項次</th>
-                            <th style="width:220px">日期 (支援智慧輸入)</th>
+                            <th style="width:220px">日期</th>
                             <th style="width:150px">單位/層級</th>
                             <th style="width:200px">地點</th>
                             <th style="width:200px">訓練項目</th>
                             <th style="width:80px">辦理<br>場次</th>
-                            <th style="width:80px">參與人數<br><span class="text-[10px] font-normal text-slate-500">(各梯總和)</span></th>
+                            <th style="width:80px">參與<br>人數</th>
                             <th style="width:150px">備註</th>
                         </tr>
                     </thead>
                     <tbody id="inputBody"></tbody>
-                    <tfoot class="example-row"><tr><td></td><td>Ex</td><td>114年1月1、2日</td><td>信義中隊</td><td>地下停車場</td><td>滅火毯操作</td><td>1</td><td>20</td><td>(範例格式)</td></tr></tfoot>
+                    <tfoot class="example-row"><tr><td></td><td>Ex</td><td>114年1月1、2日</td><td>信義中隊</td><td>地下停車場</td><td>滅火毯操作</td><td>1</td><td>20</td><td>(範例)</td></tr></tfoot>
                 </table>
             </div>
             
@@ -177,6 +176,7 @@
                 <div><i class="ri-group-line text-lg mr-1"></i> 總人數：<span id="histTotalPeople" class="text-xl">0</span> 人</div>
             </div>
 
+            <!-- ★ 表格容器：確保有 min-height:0 以支援捲動 -->
             <div class="table-wrapper flex-1 min-h-0 overflow-auto bg-white border border-slate-200 rounded-lg shadow-sm mb-0">
                 <table id="historyTable">
                     <thead><tr><th style="width:60px">項次</th><th style="width:220px">日期</th><th style="width:120px">單位/層級</th><th style="width:150px">地點</th><th style="width:200px">訓練項目</th><th style="width:60px">場次</th><th style="width:60px">人數</th><th style="width:120px">備註</th><th style="width:100px">成果照片</th></tr></thead>
@@ -184,6 +184,7 @@
                 </table>
             </div>
 
+            <!-- 分頁列 -->
             <div class="h-[60px] flex items-center justify-between border-t border-slate-200 pt-3 mt-2 shrink-0 bg-slate-100">
                 <div class="text-sm text-slate-500">顯示第 <span id="pageInfoStart" class="font-bold text-slate-700">0</span> - <span id="pageInfoEnd" class="font-bold text-slate-700">0</span> 筆，共 <span id="pageInfoTotal" class="font-bold text-slate-700">0</span> 筆</div>
                 <div class="flex gap-2">
@@ -207,9 +208,7 @@
             </div>
             
             <div class="flex-1 overflow-y-auto min-h-0 pr-2" id="galleryContainer">
-                <div class="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6" id="galleryGrid">
-                    <!-- 卡片由 JS 產生 -->
-                </div>
+                <div class="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6" id="galleryGrid"></div>
             </div>
         </div>
     </main>
@@ -371,7 +370,6 @@
                 
                 let photoBtn = '';
                 if(row.folderUrl) {
-                    // ★ 有資料夾 = 綠色實心按鈕
                     photoBtn = `
                     <div class="flex gap-2 justify-center items-center">
                         <a href="${row.folderUrl}" target="_blank" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-emerald-700 shadow-sm" title="開啟資料夾">
@@ -380,7 +378,6 @@
                         <button onclick="triggerPhotoUpload(${startIdx + i})" class="text-slate-300 hover:text-blue-500" title="加傳照片"><i class="ri-add-circle-fill text-lg"></i></button>
                     </div>`;
                 } else {
-                    // ★ 沒資料夾 = 灰色空心按鈕
                     photoBtn = `<button onclick="triggerPhotoUpload(${startIdx + i})" class="text-slate-400 hover:text-blue-600 transition bg-slate-50 px-3 py-1 rounded border border-slate-200 text-xs flex items-center gap-1 mx-auto"><i class="ri-camera-line"></i> 上傳</button>`;
                 }
 
@@ -400,22 +397,61 @@
             $('#photoInput').click();
         }
 
+        // ★ 關鍵修改：加入錯誤回報與重新整理邏輯
         async function handlePhotoUpload(input) {
             if (!input.files || input.files.length === 0) return;
             if (!uploadTarget) return alert("系統錯誤");
+
             showLoading(`正在上傳 ${input.files.length} 張照片...`);
+            
+            let successCount = 0;
+            let failMsg = "";
+
             for (let i = 0; i < input.files.length; i++) {
                 const file = input.files[i];
                 try {
                     const base64 = await fileToBase64(file);
                     const payload = {
                         mode: 'upload_image',
-                        data: { date: uploadTarget.date, unit: uploadTarget.unit, item: uploadTarget.item, fileData: base64.split(',')[1], mimeType: file.type, fileName: file.name }
+                        data: {
+                            date: uploadTarget.date,
+                            unit: uploadTarget.unit,
+                            item: uploadTarget.item,
+                            fileData: base64.split(',')[1],
+                            mimeType: file.type,
+                            fileName: file.name
+                        }
                     };
-                    await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain' } });
-                } catch (e) { console.error(e); }
+
+                    const res = await fetch(GAS_API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify(payload),
+                        headers: { 'Content-Type': 'text/plain' }
+                    });
+                    
+                    const json = await res.json();
+                    if (json.status === 'success') {
+                        successCount++;
+                    } else {
+                        console.error("後端錯誤:", json);
+                        failMsg = json.message;
+                    }
+
+                } catch (e) {
+                    console.error(e);
+                    failMsg = "網路連線錯誤";
+                }
             }
-            alert("照片上傳完成！"); input.value = ''; loadHistory(); hideLoading();
+
+            hideLoading();
+            input.value = ''; 
+
+            if (successCount > 0) {
+                alert(`成功上傳 ${successCount} 張照片！\n重新載入資料庫...`);
+                loadHistory(); 
+            } else {
+                alert(`上傳失敗！\n原因：${failMsg}\n\n(請檢查資料庫中的文字與網頁顯示是否完全一致)`);
+            }
         }
 
         function fileToBase64(file) {
@@ -427,7 +463,6 @@
             });
         }
 
-        // ★ 成果展示邏輯
         function renderGallery(mode = 'random') {
             galleryMode = mode; 
             
@@ -464,6 +499,7 @@
                         ${item.folderUrl ? '<div class="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-lg backdrop-blur-sm"><i class="ri-image-2-line"></i> 相簿</div>' : ''}
                     `;
                 } else {
+                    // ★ 沒照片顯示資料建構中
                     cardContent = `
                         <div class="w-full h-full bg-slate-100 flex flex-col items-center justify-center text-slate-400">
                             <i class="ri-folder-unknow-line text-3xl mb-1"></i>
@@ -492,7 +528,6 @@
             });
         }
 
-        // ... (保留原本的 Calendar, Excel 函式) ...
         function openCalendar(idx) { currentCalRow = idx; selectedDates.clear(); renderCalendarGrid(); $('#calendarModal').classList.remove('hidden'); $('#calendarModal').classList.add('flex'); }
         function renderCalendarGrid() {
             const grid = $('#calGrid'); grid.innerHTML = '';
