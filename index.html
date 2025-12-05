@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>電動車安全救援訓練統計系統</title>
+
+    <!-- 工具庫 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -13,23 +15,30 @@
     <script>
         // ==========================================
         // ⚠️【請修改這裡】填入您的 Google Apps Script 網址
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzRAbRfImQOfuRUOjmX1EvM1wLSSrLccGVWt1gfckfkcfhufhmtsazDDNLeXdGKH2zM/exec";
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwAyvCxPoUT1g8HHFIvFvBd7gzd6OM3zeFoaTjTDGlZhBE3ymLwMPRBWSLZkX-A1ILM/exec";
         // ==========================================
     </script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
         body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f1f5f9; }
+        
         .sidebar-link { cursor: pointer; transition: all 0.2s; }
         .sidebar-link.active { background: rgba(37, 99, 235, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
         .sidebar-link:hover:not(.active) { background: #1e293b; color: white; }
-        .table-wrapper { overflow-x: auto; background: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); }
+        
+        /* 修正：加入 overflow-y: auto 讓表格可以垂直捲動 */
+        .table-wrapper { overflow: auto; background: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); height: 100%; }
+        
         table { width: 100%; min-width: 1100px; border-collapse: collapse; table-layout: fixed; }
-        th { background: #f8fafc; color: #475569; font-weight: 700; padding: 10px; border: 1px solid #cbd5e1; font-size: 14px; }
+        th { background: #f8fafc; color: #475569; font-weight: 700; padding: 10px; border: 1px solid #cbd5e1; font-size: 14px; position: sticky; top: 0; z-index: 10; }
         td { border: 1px solid #cbd5e1; height: 42px; padding: 0; vertical-align: middle; background: white; }
+        
         input[type="text"], input[type="number"] { width: 100%; height: 100%; border: none; text-align: center; outline: none; font-size: 14px; background: transparent; color: #334155; }
         input:focus { background: #eff6ff; box-shadow: inset 0 0 0 2px #3b82f6; }
+        
         .example-row td { background: #f1f5f9; color: #94a3b8; font-style: italic; font-size: 13px; text-align: center; pointer-events: none; user-select: none; }
+        
         .btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: 0.2s; font-size: 14px; }
         .btn-blue { background: #2563eb; color: white; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
         .btn-blue:hover { background: #1d4ed8; }
@@ -37,12 +46,14 @@
         .btn-green:hover { background: #047857; }
         .btn-white { background: white; border: 1px solid #cbd5e1; color: #475569; }
         .btn-white:hover { background: #f8fafc; border-color: #94a3b8; color: #2563eb; }
+        
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
         .day-cell { padding: 8px; text-align: center; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; font-size: 14px; background: white; }
         .day-cell:hover { background: #f1f5f9; }
         .day-cell.selected { background: #3b82f6; color: white; border-color: #2563eb; font-weight: bold; }
         .day-cell.weekend { color: #ef4444; }
         .day-cell.empty { border: none; background: transparent; cursor: default; }
+        
         #loading { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: none; justify-content: center; align-items: center; color: white; backdrop-filter: blur(2px); }
         .spinner { width: 40px; height: 40px; border: 4px solid #fff; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -201,18 +212,32 @@
             if (!input.files[0]) return;
             Papa.parse(input.files[0], { header: true, skipEmptyLines: true, complete: function (res) {
                 const imp = res.data;
+                let count = 0;
                 imp.forEach(r => {
+                    // ★ 防呆機制：過濾「總計/合計」列
+                    const rowStr = JSON.stringify(r);
+                    if (rowStr.includes("總計") || rowStr.includes("合計")) return;
+
                     const get = (keys) => { for(let k of Object.keys(r)) if(keys.some(key=>k.includes(key))) return r[k]; return ''; };
                     inputData.push({ date: get(['日期','Date']), unit: get(['單位','Unit']), loc: get(['地點','Loc']), item: get(['項目','Item']), session: get(['場次','Session']), people: get(['人數','Peo']), note: get(['備註']) });
+                    count++;
                 });
-                renderInputTable(); alert(`已匯入 ${imp.length} 筆資料`); input.value = '';
+                renderInputTable(); alert(`已匯入 ${count} 筆資料 (已自動過濾總計列)`); input.value = '';
             }});
         }
 
+        // ★ 核心修正：年份排序防呆
+        // 能看懂 "114年" 也能看懂 "0114年"
         function getDateValue(dateStr) {
             if (!dateStr) return 0;
             const m = dateStr.match(/(\d+)年(\d+)月(\d+)/);
-            if (m) return parseInt(m[1])*10000 + parseInt(m[2])*100 + parseInt(m[3]);
+            if (m) {
+                // parseInt 會自動忽略前面的0，所以 0114 會變成 114
+                let y = parseInt(m[1]);
+                let month = parseInt(m[2]);
+                let day = parseInt(m[3]);
+                return y * 10000 + month * 100 + day;
+            }
             return 0;
         }
 
@@ -221,7 +246,8 @@
             fetch(GAS_API_URL).then(r => r.json()).then(json => {
                 if (json.status === 'success') {
                     historyData = json.data;
-                    historyData.sort((a, b) => getDateValue(b.date) - getDateValue(a.date)); // 由新到舊
+                    // 使用改良後的排序
+                    historyData.sort((a, b) => getDateValue(b.date) - getDateValue(a.date)); 
                     renderHistoryTable();
                 }
             });
@@ -231,6 +257,7 @@
             const tbody = $('#historyBody'); tbody.innerHTML = '';
             let tSession = 0, tPeople = 0;
             historyData.forEach((row, i) => {
+                // 自動轉型加總
                 tSession += parseInt(row.session)||0; tPeople += parseInt(row.people)||0;
                 const tr = document.createElement('tr');
                 tr.className = i % 2 === 0 ? 'bg-white' : 'bg-slate-50';
@@ -248,9 +275,7 @@
             const first = new Date(currentYear, currentMonth - 1, 1).getDay();
             for(let i=0; i<first; i++) grid.innerHTML += `<div class="day-cell empty"></div>`;
             for(let d=1; d<=days; d++) {
-                const key = `${currentYear}/${currentMonth}/${d}`;
-                const w = new Date(currentYear, currentMonth-1, d).getDay();
-                const isWk = (w===0||w===6);
+                const key = `${currentYear}/${currentMonth}/${d}`; const w = new Date(currentYear, currentMonth-1, d).getDay(); const isWk = (w===0||w===6);
                 const isSel = selectedDates.has(key);
                 const div = document.createElement('div');
                 div.className = `day-cell ${isWk?'weekend':''} ${isSel?'selected':''}`; div.innerText = d;
