@@ -16,6 +16,11 @@
         // ==========================================
         // ⚠️【請修改這裡】填入您的 Google Apps Script 網址
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyq4OqLZSY9P0zHfzv7NWfmTmGmjj7Z-IIXecPMwQ6lymRbzilKnz6GxbOBLb2l0l-0/exec";
+        
+        // 🔗 其他系統連結
+        const LINK_FLOW = "https://tfd-train.github.io/Training-Flow-Management/";
+        const LINK_BOOKING = "https://tfd-train.github.io/Facility-Booking/";
+        const LINK_PORTAL = "https://tfd-train.github.io/Training-Management-Platform/";
         // ==========================================
     </script>
 
@@ -27,10 +32,9 @@
         .sidebar-link.active { background: rgba(37, 99, 235, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
         .sidebar-link:hover:not(.active) { background: #1e293b; color: white; }
         
-        /* ★ 表格容器：Flexbox 自動伸縮，確保捲軸出現且不卡死 */
         .table-wrapper { 
             flex: 1;            
-            min-height: 0;      /* 關鍵：允許縮小 */
+            min-height: 0;
             overflow: auto;     
             background: white; 
             border-radius: 8px; 
@@ -82,11 +86,30 @@
             <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg"><i class="ri-charging-pile-2-line text-xl"></i></div>
             <div><h1 class="font-bold text-lg tracking-wide">電動車訓練</h1><p class="text-xs text-slate-400">統計管理系統</p></div>
         </div>
-        <nav class="flex-1 p-4 space-y-2">
+        
+        <!-- 功能選單 -->
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
             <div onclick="switchPage('input')" id="nav-input" class="sidebar-link active px-4 py-3 rounded-xl flex items-center gap-3 cursor-pointer"><i class="ri-edit-2-line text-xl"></i> 新增作業區</div>
             <div onclick="switchPage('history')" id="nav-history" class="sidebar-link px-4 py-3 rounded-xl flex items-center gap-3 cursor-pointer"><i class="ri-database-2-line text-xl"></i> 歷史資料庫</div>
             <div onclick="switchPage('gallery')" id="nav-gallery" class="sidebar-link px-4 py-3 rounded-xl flex items-center gap-3 cursor-pointer"><i class="ri-gallery-view-2 text-xl text-yellow-400"></i> 成果展示</div>
         </nav>
+
+        <!-- 系統切換區 (大家庭連結) -->
+        <div class="p-4 border-t border-slate-800 space-y-2 bg-slate-900">
+            <div class="text-[10px] text-slate-500 font-bold px-4 mb-1 uppercase tracking-wider">系統切換</div>
+            
+            <a href="javascript:void(0)" onclick="location.href=LINK_FLOW" class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition text-sm">
+                <i class="ri-flow-chart text-lg text-blue-400"></i> 訓練流路系統
+            </a>
+            
+            <a href="javascript:void(0)" onclick="location.href=LINK_BOOKING" class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition text-sm">
+                <i class="ri-building-2-fill text-lg text-indigo-400"></i> 場地借用系統
+            </a>
+
+            <a href="javascript:void(0)" onclick="location.href=LINK_PORTAL" class="flex items-center gap-3 px-4 py-2 rounded-xl text-slate-500 hover:text-white transition text-xs">
+                <i class="ri-arrow-left-line"></i> 回整合首頁
+            </a>
+        </div>
     </aside>
 
     <!-- 主內容區 -->
@@ -96,6 +119,7 @@
             <div class="flex gap-4">
                 <button onclick="switchPage('input')" class="text-blue-600"><i class="ri-edit-2-line"></i></button>
                 <button onclick="switchPage('history')" class="text-slate-500"><i class="ri-database-2-line"></i></button>
+                <button onclick="location.href=LINK_PORTAL" class="text-slate-400"><i class="ri-home-4-line"></i></button>
             </div>
         </div>
 
@@ -176,7 +200,6 @@
                 <div><i class="ri-group-line text-lg mr-1"></i> 總人數：<span id="histTotalPeople" class="text-xl">0</span> 人</div>
             </div>
 
-            <!-- ★ 表格容器：確保有 min-height:0 以支援捲動 -->
             <div class="table-wrapper flex-1 min-h-0 overflow-auto bg-white border border-slate-200 rounded-lg shadow-sm mb-0">
                 <table id="historyTable">
                     <thead><tr><th style="width:60px">項次</th><th style="width:220px">日期</th><th style="width:120px">單位/層級</th><th style="width:150px">地點</th><th style="width:200px">訓練項目</th><th style="width:60px">場次</th><th style="width:60px">人數</th><th style="width:120px">備註</th><th style="width:100px">成果照片</th></tr></thead>
@@ -397,7 +420,6 @@
             $('#photoInput').click();
         }
 
-        // ★ 關鍵修改：加入錯誤回報與重新整理邏輯
         async function handlePhotoUpload(input) {
             if (!input.files || input.files.length === 0) return;
             if (!uploadTarget) return alert("系統錯誤");
@@ -499,7 +521,6 @@
                         ${item.folderUrl ? '<div class="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-lg backdrop-blur-sm"><i class="ri-image-2-line"></i> 相簿</div>' : ''}
                     `;
                 } else {
-                    // ★ 沒照片顯示資料建構中
                     cardContent = `
                         <div class="w-full h-full bg-slate-100 flex flex-col items-center justify-center text-slate-400">
                             <i class="ri-folder-unknow-line text-3xl mb-1"></i>
@@ -566,7 +587,7 @@
         async function exportExcel(mode) {
             const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet('統計表');
             const isFull = mode === 'full';
-            ws.columns = isFull ? [{header:'項次',key:'id',width:8},{header:'日期',key:'date',width:30},{header:'單位',key:'unit',width:20},{header:'地點',key:'loc',width:25},{header:'訓練項目',key:'item',width:40},{header:'場次',key:'session',width:12},{header:'人數',key:'people',width:12},{header:'備註',key:'note',width:20}] : [{header:'項次',key:'id',width:8},{header:'日期',key:'date',width:35},{header:'訓練項目',key:'item',width:45},{header:'辦理場次',key:'session',width:15},{header:'參與人數',key:'people',width:15}];
+            ws.columns = isFull ? [{header:'項次',key:'id',width:8},{header:'日期',key:'date',width:30},{header:'單位',key:'unit',width:20},{header:'地點',key:'loc',width:25},{header:'訓練項目',key:'item',width:40},{header:'辦理場次',key:'session',width:12},{header:'參與人數',key:'people',width:12},{header:'備註',key:'note',width:20}] : [{header:'項次',key:'id',width:8},{header:'日期',key:'date',width:35},{header:'訓練項目',key:'item',width:45},{header:'辦理場次',key:'session',width:15},{header:'參與人數',key:'people',width:15}];
             ws.getRow(1).eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1F2937'}};});
             historyData.forEach((r,i)=>{ ws.addRow({...r, id:i+1}); });
             ws.addRow({item:'總計', session:$('#histTotalSession').innerText, people:$('#histTotalPeople').innerText}).eachCell(c=>{c.font={bold:true,color:{argb:'FFB91C1C'}};});
