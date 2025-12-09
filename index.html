@@ -14,6 +14,13 @@
         // ==========================================
         // ⚠️【請填入您的 Google Apps Script 網址】
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzqBglqQq0srj4Wne5HsdMK1w0IbaT3DdhXPsjKUsSjkEOohGZslBVXnRyuGIZGp1YJ/exec"; 
+        
+        // 🔗 系統連結
+        const SYSTEM_LINKS = {
+            portal: "https://tfd-train.github.io/Training-Management-Platform/",
+            flow: "https://tfd-train.github.io/Training-Flow-Management/",
+            booking: "https://tfd-train.github.io/Facility-Booking/"
+        };
         // ==========================================
 
         const AUDIT_UNITS = {
@@ -46,7 +53,7 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
-        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f1f5f9; }
+        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
         
         aside { transition: transform 0.3s ease-in-out; }
         .sidebar-open { transform: translateX(0); }
@@ -57,14 +64,15 @@
         .sidebar-link.active { background: rgba(37, 99, 235, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
         .sidebar-link:hover:not(.active) { background: #1e293b; color: white; }
         
-        .table-wrapper { flex: 1; min-height: 0; overflow: auto; background: white; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .table-wrapper { width: 100%; overflow-x: auto; background: white; border-radius: 8px; border: 1px solid #e2e8f0; }
         table { width: 100%; min-width: 1100px; border-collapse: collapse; table-layout: fixed; }
         th { background: #f8fafc; color: #475569; font-weight: 700; padding: 10px; border: 1px solid #cbd5e1; font-size: 14px; position: sticky; top: 0; z-index: 10; }
-        td { border: 1px solid #cbd5e1; height: 42px; padding: 0; vertical-align: middle; background: white; }
-        input { width: 100%; height: 100%; border: none; text-align: center; outline: none; background: transparent; }
-        input:focus { background: #eff6ff; }
         
-        .example-row td { background: #f1f5f9; color: #94a3b8; font-style: italic; pointer-events: none; }
+        td { border: 1px solid #cbd5e1; height: auto; padding: 6px 4px; vertical-align: top; background: white; }
+        input { width: 100%; height: 28px; border: none; text-align: center; outline: none; background: transparent; font-weight: 500; color: #1e293b; font-size: 14px; }
+        input:focus { background: #eff6ff; border-radius: 4px; }
+        
+        .example-row td { background: #f1f5f9; color: #94a3b8; font-style: italic; pointer-events: none; padding: 12px 4px; vertical-align: middle; }
         
         .btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: 0.2s; font-size: 14px; }
         .btn-blue { background: #2563eb; color: white; } .btn-blue:hover { background: #1d4ed8; }
@@ -76,7 +84,8 @@
         .day-cell.selected { background: #3b82f6; color: white; font-weight: bold; }
         .day-cell.weekend { color: #ef4444; }
         
-        .gallery-card { break-inside: avoid; margin-bottom: 1.5rem; transition: transform 0.2s; }
+        /* 修改 Gallery Card 樣式為 Grid 友善 */
+        .gallery-card { transition: transform 0.2s; display: flex; flex-direction: column; }
         .gallery-card:hover { transform: translateY(-4px); }
         
         #alertBanner { transition: all 0.5s ease-in-out; }
@@ -87,7 +96,7 @@
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="bg-slate-100 h-screen flex overflow-hidden">
+<body class="bg-slate-50 h-screen flex overflow-hidden">
     <div id="loading"><div class="spinner mb-4"></div><div class="font-bold text-lg" id="loadingText">資料處理中...</div></div>
 
     <aside id="mainSidebar" class="w-64 bg-slate-900 text-white flex-col fixed inset-y-0 left-0 z-30 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out shadow-2xl md:flex shrink-0">
@@ -98,12 +107,27 @@
             </div>
             <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white"><i class="ri-close-line text-2xl"></i></button>
         </div>
+        
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
             <div onclick="switchPage('input')" id="nav-input" class="sidebar-link active px-4 py-3 rounded-xl flex items-center gap-3 cursor-pointer"><i class="ri-edit-2-line text-xl"></i> 新增作業區</div>
             <div onclick="switchPage('history')" id="nav-history" class="sidebar-link px-4 py-3 rounded-xl flex items-center gap-3 cursor-pointer"><i class="ri-database-2-line text-xl"></i> 歷史資料庫</div>
             <div onclick="switchPage('gallery')" id="nav-gallery" class="sidebar-link px-4 py-3 rounded-xl flex items-center gap-3 cursor-pointer"><i class="ri-gallery-view-2 text-xl text-yellow-400"></i> 成果展示</div>
+        
+            <!-- ★ 系統快速連結 ★ -->
+            <div class="pt-8 pb-2">
+                <div class="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">系統快速連結</div>
+                <a href="javascript:void(0)" onclick="location.href=SYSTEM_LINKS.portal" class="sidebar-link px-4 py-2.5 rounded-xl flex items-center gap-3 text-sm text-slate-400 hover:text-white mb-1 transition">
+                    <i class="ri-apps-2-line"></i> 訓練管理整合平台
+                </a>
+                <a href="javascript:void(0)" onclick="location.href=SYSTEM_LINKS.flow" class="sidebar-link px-4 py-2.5 rounded-xl flex items-center gap-3 text-sm text-slate-400 hover:text-white mb-1 transition">
+                    <i class="ri-flow-chart"></i> 訓練流路管理系統
+                </a>
+                <a href="javascript:void(0)" onclick="location.href=SYSTEM_LINKS.booking" class="sidebar-link px-4 py-2.5 rounded-xl flex items-center gap-3 text-sm text-slate-400 hover:text-white transition">
+                    <i class="ri-building-2-line"></i> 場地借用系統
+                </a>
+            </div>
         </nav>
-        <!-- 已移除版本號顯示 -->
+        
         <div class="p-4 border-t border-slate-800 text-center text-xs text-slate-500"></div>
     </aside>
 
@@ -111,7 +135,6 @@
 
     <main class="flex-1 flex flex-col h-full overflow-hidden relative min-w-0">
         
-        <!-- 手機版 Header -->
         <header class="bg-white border-b border-slate-200 h-14 flex items-center justify-between px-4 md:hidden shrink-0 z-10">
             <div class="font-bold text-slate-700 flex items-center gap-2">
                 <span class="w-6 h-6 bg-blue-600 rounded flex items-center justify-center text-white"><i class="ri-charging-pile-2-line"></i></span>
@@ -134,60 +157,88 @@
             <button onclick="$('#alertBanner').classList.add('hidden')" class="text-rose-400 hover:text-rose-700"><i class="ri-close-line text-lg"></i></button>
         </div>
 
-        <div id="page-input" class="flex-1 flex flex-col p-6 overflow-hidden h-full">
+        <div id="page-input" class="flex-1 flex flex-col p-6 overflow-y-auto h-full">
             
-            <div class="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-sm shrink-0">
+            <div class="bg-white border border-slate-200 border-l-4 border-l-yellow-400 rounded-xl p-5 mb-6 shadow-sm shrink-0 relative">
                 <div class="flex items-center gap-2 mb-3">
-                    <span class="w-1 h-5 bg-yellow-500 rounded-full"></span>
-                    <h3 class="font-bold text-slate-700 text-sm">本月填報確認 <span class="text-xs font-normal text-slate-400 ml-1">(請勾選單位並送出)</span></h3>
+                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <i class="ri-checkbox-circle-line text-yellow-500 text-lg"></i> 本月填報確認 
+                    </h3>
+                    <span class="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">請勾選單位並送出</span>
                 </div>
                 
                 <div class="flex flex-wrap items-end gap-3">
                     <div class="flex-1 min-w-[140px]">
                         <label class="text-[10px] font-bold text-slate-400 block mb-1">選擇大隊</label>
-                        <select id="selBat" onchange="renderSquadSelect()" class="w-full border border-slate-300 rounded-lg p-1.5 text-sm bg-slate-50 font-bold outline-none focus:border-blue-500"><option value="">大隊...</option></select>
+                        <select id="selBat" onchange="renderSquadSelect()" class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-slate-50 font-bold outline-none focus:border-blue-500"><option value="">大隊...</option></select>
                     </div>
                     <div class="flex-1 min-w-[140px]">
                         <label class="text-[10px] font-bold text-slate-400 block mb-1">選擇中隊</label>
-                        <select id="selSquad" onchange="renderUnitCheckboxes()" class="w-full border border-slate-300 rounded-lg p-1.5 text-sm bg-slate-50 font-bold outline-none focus:border-blue-500" disabled><option value="">請先選大隊</option></select>
+                        <select id="selSquad" onchange="renderUnitCheckboxes()" class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-slate-50 font-bold outline-none focus:border-blue-500" disabled><option value="">請先選大隊</option></select>
                     </div>
                     <div class="w-[200px]">
                         <label class="text-[10px] font-bold text-slate-400 block mb-1">狀態</label>
                         <div class="flex bg-slate-100 p-1 rounded-lg">
-                            <label class="flex-1 text-center cursor-pointer"><input type="radio" name="auditType" value="已填寫" checked class="hidden peer"><span class="block text-xs py-1 rounded peer-checked:bg-white peer-checked:text-emerald-600 peer-checked:shadow-sm peer-checked:font-bold text-slate-500 transition">已填寫</span></label>
-                            <label class="flex-1 text-center cursor-pointer"><input type="radio" name="auditType" value="本月無更新" class="hidden peer"><span class="block text-xs py-1 rounded peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm peer-checked:font-bold text-slate-500 transition">本月無更新</span></label>
+                            <label class="flex-1 text-center cursor-pointer"><input type="radio" name="auditType" value="已填寫" checked class="hidden peer"><span class="block text-xs py-1.5 rounded peer-checked:bg-white peer-checked:text-emerald-600 peer-checked:shadow-sm peer-checked:font-bold text-slate-500 transition">已填寫</span></label>
+                            <label class="flex-1 text-center cursor-pointer"><input type="radio" name="auditType" value="本月無更新" class="hidden peer"><span class="block text-xs py-1.5 rounded peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm peer-checked:font-bold text-slate-500 transition">本月無更新</span></label>
                         </div>
                     </div>
-                    <button onclick="submitAudit()" class="bg-slate-800 text-white px-4 py-1.5 rounded-lg text-sm font-bold shadow hover:bg-slate-700 active:scale-95 transition h-[34px] flex items-center gap-1"><i class="ri-check-double-line"></i> 送出確認</button>
+                    <button onclick="submitAudit()" class="bg-slate-800 text-white px-5 py-2 rounded-lg text-sm font-bold shadow hover:bg-slate-700 active:scale-95 transition flex items-center gap-2"><i class="ri-send-plane-fill"></i> 送出確認</button>
                 </div>
 
                 <div id="unitCheckArea" class="mt-3 pt-3 border-t border-slate-100 hidden">
                     <div class="flex justify-between mb-2">
-                        <span class="text-xs text-slate-400">勾選單位 (可多選)：</span>
+                        <span class="text-xs text-slate-400 font-bold">勾選單位 (可多選)：</span>
                         <button onclick="toggleAllUnits()" class="text-xs text-blue-500 hover:underline">全選</button>
                     </div>
                     <div id="unitCheckboxGrid" class="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-2"></div>
                 </div>
             </div>
 
-            <div class="flex justify-between items-center mb-4 shrink-0 flex-wrap gap-2">
-                <div class="flex items-center gap-2"><span class="w-1 h-6 bg-blue-600 rounded-full"></span><h2 class="text-xl font-bold text-slate-800">新增作業區</h2></div>
-                <div class="flex gap-2">
-                    <button class="btn btn-white" onclick="downloadTemplate()"><i class="ri-file-download-line"></i> 下載範本</button>
-                    <button class="btn btn-white" onclick="$('#csvInput').click()"><i class="ri-upload-2-line"></i> 匯入 CSV</button>
-                    <button class="btn btn-blue" onclick="saveToCloud()"><i class="ri-cloud-upload-line"></i> 儲存</button>
+            <div class="my-6 flex items-center gap-4 opacity-60">
+                <div class="h-px bg-slate-300 flex-1 border-t border-dashed border-slate-300"></div>
+                <div class="text-slate-400 text-[10px] font-mono tracking-widest uppercase">New Data Entry</div>
+                <div class="h-px bg-slate-300 flex-1 border-t border-dashed border-slate-300"></div>
+            </div>
+
+            <!-- ★ 修改點：使用 flex-1 讓藍色卡片自動填滿剩餘高度 ★ -->
+            <div class="bg-white border border-slate-200 border-l-4 border-l-blue-600 rounded-xl p-5 shadow-sm flex flex-col flex-1">
+                <div class="flex justify-between items-center mb-4 shrink-0 flex-wrap gap-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                            <i class="ri-edit-box-line text-xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800">新增作業區</h2>
+                            <p class="text-xs text-slate-500">請填寫下方訓練資料</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn btn-white" onclick="downloadTemplate()"><i class="ri-file-download-line"></i> 下載範本</button>
+                        <button class="btn btn-white" onclick="$('#csvInput').click()"><i class="ri-upload-2-line"></i> 匯入 CSV</button>
+                        <button class="btn btn-blue shadow-lg shadow-blue-200" onclick="saveToCloud()"><i class="ri-cloud-upload-line"></i> 儲存</button>
+                    </div>
                 </div>
+                
+                <div class="table-wrapper">
+                    <table id="inputTable">
+                        <thead>
+                            <tr>
+                                <th style="width:50px">刪</th><th style="width:50px">序</th><th style="width:220px">日期</th>
+                                <th style="width:150px">單位</th><th style="width:200px">地點</th><th style="width:200px">項目</th>
+                                <th style="width:80px">場次</th><th style="width:100px">人數</th><th style="width:150px">備註</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inputBody"></tbody>
+                        <tfoot class="example-row"><tr><td></td><td>Ex</td><td>114年1月1日</td><td>信義中隊</td><td>駐地</td><td>訓練</td><td>1</td><td>20</td><td></td></tr></tfoot>
+                    </table>
+                </div>
+                <div class="mt-4 flex justify-center shrink-0"><button class="btn btn-white w-full md:w-auto justify-center" onclick="addInputRow()"><i class="ri-add-line"></i> 新增一列</button></div>
             </div>
             
-            <div class="table-wrapper">
-                <table id="inputTable">
-                    <thead><tr><th style="width:50px">刪</th><th style="width:50px">序</th><th style="width:220px">日期</th><th style="width:150px">單位</th><th style="width:200px">地點</th><th style="width:200px">項目</th><th style="width:80px">場次</th><th style="width:80px">人數</th><th style="width:150px">備註</th></tr></thead>
-                    <tbody id="inputBody"></tbody>
-                    <tfoot class="example-row"><tr><td></td><td>Ex</td><td>114年1月1日</td><td>信義中隊</td><td>駐地</td><td>訓練</td><td>1</td><td>20</td><td></td></tr></tfoot>
-                </table>
-            </div>
-            <div class="mt-4 flex justify-center shrink-0"><button class="btn btn-white" onclick="addInputRow()"><i class="ri-add-line"></i> 新增一列</button></div>
+            <div class="h-10"></div>
         </div>
+        
         <div id="page-history" class="hidden flex-col p-6 overflow-hidden h-full">
             <div class="flex justify-between items-center mb-4 shrink-0 flex-wrap gap-2">
                 <div class="flex items-center gap-2"><span class="w-1 h-6 bg-emerald-600 rounded-full"></span><h2 class="text-xl font-bold text-slate-800">歷史資料庫</h2></div>
@@ -226,19 +277,33 @@
         </div>
 
         <div id="page-gallery" class="hidden flex-1 flex-col p-6 overflow-hidden h-full bg-slate-50">
-            <div class="flex justify-between items-center mb-6 shrink-0">
+            <div class="flex justify-between items-center mb-6 shrink-0 flex-wrap gap-3">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-6 bg-yellow-400 rounded-full"></span>
                     <h2 class="text-xl font-bold text-slate-800">成果展示牆</h2>
                 </div>
-                <div class="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
-                    <button id="btnGalleryLatest" class="px-4 py-1.5 rounded-lg text-sm font-bold transition text-slate-500 hover:text-slate-800" onclick="renderGallery('latest')">🔥 最新</button>
-                    <button id="btnGalleryRandom" class="px-4 py-1.5 rounded-lg text-sm font-bold transition bg-slate-800 text-white shadow" onclick="renderGallery('random')">🎲 隨機</button>
+                
+                <!-- 搜尋框 -->
+                <div class="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm flex-1 max-w-md">
+                    <div class="pl-3 flex items-center text-slate-400"><i class="ri-search-line"></i></div>
+                    <input type="text" id="gallerySearchInput" onkeyup="searchGallery()" placeholder="搜尋單位、項目或日期..." class="w-full border-none outline-none bg-transparent px-2 text-sm font-bold text-slate-700 h-9">
                 </div>
             </div>
             
-            <div class="flex-1 overflow-y-auto min-h-0 pr-2" id="galleryContainer">
-                <div class="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6" id="galleryGrid"></div>
+            <!-- ★ 修改點：改用 Grid 網格排列，取代 Masonry (Columns) ★ -->
+            <div class="flex-1 overflow-y-auto min-h-0 pr-2 scroll-smooth" id="galleryContainer">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="galleryGrid"></div>
+            </div>
+
+            <!-- 分頁控制區 -->
+            <div class="h-[60px] flex items-center justify-between border-t border-slate-200 pt-3 mt-2 shrink-0">
+                <div class="text-sm text-slate-500">
+                    顯示第 <span id="galInfoStart" class="font-bold">0</span> - <span id="galInfoEnd" class="font-bold">0</span> 筆，共 <span id="galInfoTotal" class="font-bold text-slate-700">0</span> 筆
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="changeGalleryPage(-1)" id="galPrevBtn" class="px-4 py-2 border border-slate-300 rounded-lg bg-white hover:bg-slate-50 text-sm font-bold disabled:opacity-50">上一頁</button>
+                    <button onclick="changeGalleryPage(1)" id="galNextBtn" class="px-4 py-2 border border-slate-300 rounded-lg bg-white hover:bg-slate-50 text-sm font-bold disabled:opacity-50">下一頁</button>
+                </div>
             </div>
         </div>
     </main>
@@ -275,6 +340,11 @@
         const itemsPerPage = 20;
         let uploadTarget = null; 
         let galleryMode = 'random'; 
+
+        // Gallery Pagination Variables
+        let galleryPage = 1;
+        let gallerySearchText = "";
+        const galleryPerPage = 24;
 
         window.onload = function() { 
             addInputRow(); 
@@ -313,7 +383,7 @@
             target.classList.remove('hidden');
             
             if(page === 'history' || page === 'gallery') target.classList.add('flex');
-            if(page === 'gallery') renderGallery(galleryMode);
+            if(page === 'gallery') renderGallery();
         }
         function fixYearFormat(val) {
             if (!val) return "";
@@ -347,7 +417,22 @@
             const tbody = $('#inputBody'); tbody.innerHTML = '';
             inputData.forEach((row, i) => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td class="text-center"><button onclick="removeInputRow(${i})" class="text-slate-300 hover:text-red-500"><i class="ri-close-circle-fill text-xl"></i></button></td><td class="text-center text-slate-400 font-mono">${i + 1}</td><td><div class="flex items-center h-full"><input type="text" value="${row.date}" onchange="inputData[${i}].date=this.value" placeholder="點擊選取日期"><button onclick="openCalendar(${i})" class="w-8 h-full bg-slate-50 border-l hover:text-blue-600"><i class="ri-calendar-line"></i></button></div></td><td><input type="text" value="${row.unit}" onchange="inputData[${i}].unit=this.value"></td><td><input type="text" value="${row.loc}" onchange="inputData[${i}].loc=this.value"></td><td><input type="text" value="${row.item}" onchange="inputData[${i}].item=this.value"></td><td><input type="number" value="${row.session}" onchange="inputData[${i}].session=this.value"></td><td><input type="number" value="${row.people}" onchange="inputData[${i}].people=this.value"></td><td><input type="text" value="${row.note}" onchange="inputData[${i}].note=this.value"></td>`;
+                tr.innerHTML = `
+                    <td class="text-center align-middle"><button onclick="removeInputRow(${i})" class="text-slate-300 hover:text-red-500"><i class="ri-close-circle-fill text-xl"></i></button></td>
+                    <td class="text-center text-slate-400 font-mono align-middle">${i + 1}</td>
+                    <td>
+                        <div class="flex items-center h-full relative">
+                            <input type="text" value="${row.date}" onchange="inputData[${i}].date=this.value" placeholder="點擊選取日期">
+                            <button onclick="openCalendar(${i})" class="absolute right-0 top-0 h-full w-8 text-slate-400 hover:text-blue-600"><i class="ri-calendar-line"></i></button>
+                        </div>
+                        <div class="text-[10px] text-slate-400 mt-1 text-center">請填選日期</div>
+                    </td>
+                    <td><input type="text" value="${row.unit}" onchange="inputData[${i}].unit=this.value" placeholder="請填寫"><div class="text-[10px] text-slate-400 mt-1 text-center">填寫單位</div></td>
+                    <td><input type="text" value="${row.loc}" onchange="inputData[${i}].loc=this.value" placeholder="請填寫"><div class="text-[10px] text-slate-400 mt-1 text-center">填寫地點</div></td>
+                    <td><input type="text" value="${row.item}" onchange="inputData[${i}].item=this.value" placeholder="請填寫"><div class="text-[10px] text-slate-400 mt-1 text-center">填寫項目</div></td>
+                    <td><input type="number" value="${row.session}" onchange="inputData[${i}].session=this.value" placeholder="0"><div class="text-[10px] text-slate-400 mt-1 text-center">填寫場次</div></td>
+                    <td><input type="number" value="${row.people}" onchange="inputData[${i}].people=this.value" placeholder="0"><div class="text-[10px] text-rose-500 mt-1 text-center font-bold">(各場次加總)</div></td>
+                    <td><input type="text" value="${row.note}" onchange="inputData[${i}].note=this.value" placeholder="選填"><div class="text-[10px] text-slate-400 mt-1 text-center">備註事項</div></td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -416,6 +501,7 @@
                     renderHistoryTable();
                     renderAlertBanner();
                     renderUnitCheckboxes(); 
+                    if(currentTab === 'gallery') renderGallery();
                 }
             }).finally(() => hideLoading());
         }
@@ -648,31 +734,47 @@
                 alert(`上傳失敗！\n原因：${failMsg}`);
             }
         }
-        function renderGallery(mode = 'random') {
-            galleryMode = mode; 
-            const btnLatest = $('#btnGalleryLatest');
-            const btnRandom = $('#btnGalleryRandom');
+
+        // ==========================================
+        // ★ Gallery Logic (Grid + Search + Pagination)
+        // ==========================================
+        function searchGallery() {
+            gallerySearchText = document.getElementById('gallerySearchInput').value.toLowerCase();
+            galleryPage = 1;
+            renderGallery();
+        }
+
+        function changeGalleryPage(delta) {
+            galleryPage += delta;
+            renderGallery();
+        }
+
+        function renderGallery() {
+            let filtered = historyData.filter(r => {
+                const keyword = gallerySearchText;
+                if (!keyword) return true;
+                const content = `${r.date} ${r.unit} ${r.item} ${r.note}`.toLowerCase();
+                return content.includes(keyword);
+            });
+
+            const total = filtered.length;
+            const maxPage = Math.ceil(total / galleryPerPage) || 1;
             
-            if (mode === 'latest') {
-                btnLatest.className = "px-4 py-1.5 rounded-lg text-sm font-bold transition bg-slate-800 text-white shadow";
-                btnRandom.className = "px-4 py-1.5 rounded-lg text-sm font-bold transition text-slate-500 hover:text-slate-800";
-            } else {
-                btnRandom.className = "px-4 py-1.5 rounded-lg text-sm font-bold transition bg-slate-800 text-white shadow";
-                btnLatest.className = "px-4 py-1.5 rounded-lg text-sm font-bold transition text-slate-500 hover:text-slate-800";
-            }
+            if (galleryPage < 1) galleryPage = 1;
+            if (galleryPage > maxPage) galleryPage = maxPage;
+
+            const startIdx = (galleryPage - 1) * galleryPerPage;
+            const endIdx = startIdx + galleryPerPage;
+            const displayList = filtered.slice(startIdx, endIdx);
 
             const container = $('#galleryGrid');
             container.innerHTML = '';
 
-            let withPhotos = historyData.filter(r => r.coverUrl);
-            let withoutPhotos = historyData.filter(r => !r.coverUrl);
-            let displayList = [];
-
-            if (mode === 'latest') {
-                displayList = [...withPhotos, ...withoutPhotos].slice(0, 24);
-            } else {
-                let all = [...withPhotos, ...withoutPhotos];
-                displayList = all.sort(() => Math.random() - 0.5).slice(0, 24);
+            if (displayList.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center text-slate-400 py-20 flex flex-col items-center">
+                    <i class="ri-search-2-line text-4xl mb-2"></i>
+                    <span>沒有符合的資料</span>
+                </div>`;
             }
 
             displayList.forEach(item => {
@@ -680,66 +782,66 @@
                 if (item.coverUrl) {
                     cardContent = `
                         <img src="${item.coverUrl}" class="w-full h-full object-cover transition duration-500 group-hover:scale-110" loading="lazy">
-                        ${item.folderUrl ? '<div class="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-lg backdrop-blur-sm"><i class="ri-image-2-line"></i> 相簿</div>' : ''}
+                        ${item.folderUrl ? '<div class="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded backdrop-blur-sm"><i class="ri-image-2-line"></i> 相簿</div>' : ''}
                     `;
                 } else {
                     cardContent = `
                         <div class="w-full h-full bg-slate-100 flex flex-col items-center justify-center text-slate-400">
                             <i class="ri-folder-unknow-line text-3xl mb-1"></i>
-                            <span class="text-xs font-bold tracking-widest">資料建構中</span>
+                            <span class="text-[10px] font-bold tracking-widest mt-1">無封面圖</span>
                         </div>
                     `;
                 }
 
                 const card = document.createElement('div');
-                card.className = 'gallery-card bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100 cursor-pointer group';
+                // Grid Item 樣式
+                card.className = 'gallery-card bg-white rounded-xl shadow-sm overflow-hidden border border-slate-100 cursor-pointer group hover:shadow-md';
                 card.onclick = () => { if(item.folderUrl) window.open(item.folderUrl, '_blank'); };
                 
                 card.innerHTML = `
                     <div class="relative overflow-hidden aspect-video bg-slate-50">
                         ${cardContent}
                     </div>
-                    <div class="p-4">
-                        <h3 class="font-bold text-slate-800 line-clamp-1 mb-1">${item.item}</h3>
-                        <div class="flex justify-between items-center text-xs text-slate-500">
-                            <span><i class="ri-calendar-line"></i> ${item.date}</span>
-                            <span class="bg-slate-100 px-2 py-0.5 rounded-full">${item.unit}</span>
+                    <div class="p-4 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-slate-800 line-clamp-1 mb-1 text-sm" title="${item.item}">${item.item}</h3>
+                            <div class="flex justify-between items-center text-xs text-slate-500">
+                                <span><i class="ri-calendar-line"></i> ${item.date}</span>
+                                <span class="bg-slate-100 px-2 py-0.5 rounded text-[10px]">${item.unit}</span>
+                            </div>
                         </div>
                     </div>
                 `;
                 container.appendChild(card);
             });
+
+            $('#galInfoStart').innerText = total > 0 ? startIdx + 1 : 0;
+            $('#galInfoEnd').innerText = Math.min(endIdx, total);
+            $('#galInfoTotal').innerText = total;
             
-            if(displayList.length === 0) {
-                container.innerHTML = `<div class="col-span-full text-center text-slate-400 py-10">目前尚無成果照片</div>`;
-            }
+            $('#galPrevBtn').disabled = galleryPage === 1;
+            $('#galNextBtn').disabled = galleryPage >= maxPage || total === 0;
         }
 
-       // ★ 修改後：打開日曆時，自動定位到「當前月份」或「已選月份」
+        // ==========================================
+        // ★ Smart Calendar
+        // ==========================================
         function openCalendar(i) { 
             currentCalRow = i; 
             selectedDates.clear(); 
 
-            // 1. 取得該格目前的日期值
             const val = inputData[i].date;
             const now = new Date();
             
-            // 預設先抓「現在」的時間
             currentYear = now.getFullYear();
             currentMonth = now.getMonth() + 1;
 
-            // 2. 如果格子裡已經有日期 (例如 "114年5月")，就解析它並跳轉過去
             if (val) {
-                // 抓取字串中的前兩個數字 (年、月)
                 const match = val.match(/(\d+)[^0-9]+(\d+)/);
                 if (match) {
                     let y = parseInt(match[1]);
                     let m = parseInt(match[2]);
-                    
-                    // 判斷是否為民國年 (小於 1911 就當作民國年)
                     if (y < 1911) y += 1911;
-                    
-                    // 簡單防呆：月份要是合理的才跳轉
                     if (m >= 1 && m <= 12) {
                         currentYear = y;
                         currentMonth = m;
