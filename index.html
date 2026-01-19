@@ -308,7 +308,7 @@
         <div class="bg-white w-[350px] p-5 rounded-2xl shadow-2xl">
             <div class="flex justify-between items-center mb-2">
                 <button onclick="changeMonth(-1)" class="p-1 hover:bg-slate-100 rounded"><i class="ri-arrow-left-s-line"></i></button>
-                <div class="font-bold text-lg" id="calMonthTitle">2025年 1月</div>
+                <div class="font-bold text-lg" id="calMonthTitle">2026年 1月</div>
                 <button onclick="changeMonth(1)" class="p-1 hover:bg-slate-100 rounded"><i class="ri-arrow-right-s-line"></i></button>
             </div>
             <div class="flex gap-2 mb-3 text-xs">
@@ -451,7 +451,7 @@
         }
 
         // ==========================================
-        // ★ Smart Alert Banner (自動與手動雙重檢核)
+        // ★ Smart Alert Banner (根據建檔時間自動判定)
         // ==========================================
         function renderAlertBanner() {
             const now = new Date();
@@ -462,12 +462,15 @@
             const ymKey = `${yearAD}-${String(month).padStart(2,'0')}`;
             const rocLabel = `${yearROC}年${month}月`;
 
-            // 1. 自動偵測本月已有填寫資料的單位
-            const unitsWithData = new Set();
+            // 【核心修正】檢查本月份是否有「建立時間（建檔時間）」的紀錄
+            const unitsWithActivityThisMonth = new Set();
             historyData.forEach(row => {
-                const m = row.date.match(/(\d+)年(\d+)月/);
-                if (m && parseInt(m[1]) === yearROC && parseInt(m[2]) === month) {
-                    unitsWithData.add(row.unit);
+                if (row.createdAt) {
+                    const cDate = new Date(row.createdAt);
+                    // 只要建檔時間的西元年、月份與現在符合
+                    if (cDate.getFullYear() === yearAD && (cDate.getMonth() + 1) === month) {
+                        unitsWithActivityThisMonth.add(row.unit);
+                    }
                 }
             });
 
@@ -475,9 +478,13 @@
             for (const [bat, squads] of Object.entries(AUDIT_UNITS)) {
                 let batMissing = [];
                 Object.values(squads).flat().forEach(u => {
-                    const hasManual = auditLogs[`${ymKey}_${u}`];
-                    const hasData = unitsWithData.has(u);
-                    if (!hasManual && !hasData) batMissing.push(u);
+                    const hasManualAudit = auditLogs[`${ymKey}_${u}`];
+                    const hasDataCreation = unitsWithActivityThisMonth.has(u);
+                    
+                    // 如果沒有手動結案，且本月也沒有任何建檔紀錄，才列為「尚未結案」
+                    if (!hasManualAudit && !hasDataCreation) {
+                        batMissing.push(u);
+                    }
                 });
                 if (batMissing.length > 0) {
                     totalCount += batMissing.length;
@@ -724,5 +731,33 @@
             }});
         }
     </script>
+
+    <!-- ★ Google Apps Script 代碼備註 ★
+    請將以下代碼更新至您的 GAS 編輯器，確保 doGet 會回傳「建立時間 (r[7])」
+
+    function doGet(e) {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const sheetData = ss.getSheetByName("訓練資料庫");
+      let history = [];
+      if (sheetData && sheetData.getLastRow() > 1) {
+        const rows = sheetData.getDataRange().getValues();
+        rows.shift(); 
+        history = rows.map(r => ({ 
+          date: String(r[0]).replace(/^'/, ''), 
+          unit: r[1], 
+          loc: r[2], 
+          item: r[3], 
+          session: r[4], 
+          people: r[5], 
+          note: r[6],
+          createdAt: r[7], // <-- 這裡務必包含第 8 欄 (索引 7)
+          folderUrl: r[8], 
+          coverUrl: r[9] 
+        }));
+      }
+      // ... 後略 (auditLogs 等)
+      return ContentService.createTextOutput(JSON.stringify({ status: 'success', data: history, audit: auditLogs })).setMimeType(ContentService.MimeType.JSON);
+    }
+    -->
 </body>
 </html>
