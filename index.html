@@ -63,10 +63,15 @@
         th { background: #f8fafc; color: #475569; font-weight: 700; padding: 10px; border: 1px solid #cbd5e1; font-size: 14px; position: sticky; top: 0; z-index: 10; }
         td { border: 1px solid #cbd5e1; height: auto; padding: 6px 4px; vertical-align: top; background: white; }
         input { width: 100%; height: 28px; border: none; text-align: center; outline: none; background: transparent; font-weight: 500; color: #1e293b; font-size: 14px; }
+        input:focus { background: #eff6ff; border-radius: 4px; }
         .btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: 0.2s; font-size: 14px; }
         .btn-blue { background: #2563eb; color: white; } .btn-blue:hover { background: #1d4ed8; }
         .btn-green { background: #059669; color: white; } .btn-green:hover { background: #047857; }
         .btn-white { background: white; border: 1px solid #cbd5e1; color: #475569; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
+        .day-cell { padding: 8px; text-align: center; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; font-size: 14px; background: white; }
+        .day-cell.selected { background: #3b82f6; color: white; }
+        .day-cell.weekend { color: #ef4444; }
         .gallery-card { transition: transform 0.2s; display: flex; flex-direction: column; }
         .gallery-card:hover { transform: translateY(-4px); }
         #loading { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: none; justify-content: center; align-items: center; color: white; backdrop-filter: blur(2px); }
@@ -77,6 +82,7 @@
 <body class="bg-slate-50 h-screen flex overflow-hidden">
     <div id="loading"><div class="spinner mb-4"></div><div class="font-bold text-lg" id="loadingText">資料處理中...</div></div>
 
+    <!-- 側邊欄 (原始設計) -->
     <aside id="mainSidebar" class="w-64 bg-slate-900 text-white flex-col fixed inset-y-0 left-0 z-30 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out shadow-2xl md:flex shrink-0">
         <div class="p-6 border-b border-slate-800 flex items-center justify-between gap-3">
             <div class="flex items-center gap-3">
@@ -99,6 +105,7 @@
 
     <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-20 hidden md:hidden"></div>
 
+    <!-- 主要內容區 -->
     <main class="flex-1 flex flex-col h-full overflow-hidden relative min-w-0">
         <header class="bg-white border-b border-slate-200 h-14 flex items-center justify-between px-4 md:hidden shrink-0 z-10">
             <div class="font-bold text-slate-700 flex items-center gap-2">
@@ -107,7 +114,7 @@
             <button onclick="toggleSidebar()" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i class="ri-menu-line text-xl"></i></button>
         </header>
 
-        <!-- ⚠️ 尚未結案提醒橫幅 -->
+        <!-- ⚠️ 尚未結案提醒橫幅 (邏輯修正重點) -->
         <div id="alertBanner" class="bg-rose-50 border-b border-rose-200 px-6 py-4 flex items-start gap-3 hidden shadow-sm shrink-0">
             <div class="mt-1 bg-rose-100 p-1.5 rounded-full"><i class="ri-alarm-warning-fill text-rose-500 text-lg"></i></div>
             <div class="flex-1">
@@ -125,6 +132,7 @@
             <div class="bg-white border border-slate-200 border-l-4 border-l-yellow-400 rounded-xl p-5 mb-6 shadow-sm shrink-0 relative">
                 <div class="flex items-center gap-2 mb-3">
                     <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="ri-checkbox-circle-line text-yellow-500 text-lg"></i> 本月填報確認</h3>
+                    <span class="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">若本月無資料請點選此處結案</span>
                 </div>
                 <div class="flex flex-wrap items-end gap-3">
                     <div class="flex-1 min-w-[140px]">
@@ -152,8 +160,12 @@
 
             <div class="bg-white border border-slate-200 border-l-4 border-l-blue-600 rounded-xl p-5 shadow-sm flex flex-col flex-1">
                 <div class="flex justify-between items-center mb-4 shrink-0 flex-wrap gap-2">
-                    <h2 class="text-lg font-bold text-slate-800">新增作業區</h2>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600"><i class="ri-edit-box-line text-xl"></i></div>
+                        <div><h2 class="text-lg font-bold text-slate-800">新增作業區</h2><p class="text-xs text-slate-500">請填寫下方訓練資料</p></div>
+                    </div>
                     <div class="flex gap-2">
+                        <button class="btn btn-white" onclick="downloadTemplate()">下載範本</button>
                         <button class="btn btn-white" onclick="$('#csvInput').click()">匯入 CSV</button>
                         <button class="btn btn-blue" onclick="saveToCloud()">儲存</button>
                     </div>
@@ -166,15 +178,18 @@
                         <tbody id="inputBody"></tbody>
                     </table>
                 </div>
-                <div class="mt-4 flex justify-center"><button class="btn btn-white" onclick="addInputRow()">新增一列</button></div>
+                <div class="mt-4 flex justify-center"><button class="btn btn-white" onclick="addInputRow()"><i class="ri-add-line"></i> 新增一列</button></div>
             </div>
         </div>
         
         <!-- 頁面：歷史資料庫 -->
         <div id="page-history" class="hidden flex-col p-6 overflow-hidden h-full">
             <div class="flex justify-between items-center mb-4 shrink-0 flex-wrap gap-2">
-                <h2 class="text-xl font-bold text-slate-800">歷史資料庫</h2>
-                <div class="flex gap-2"><button class="btn btn-white" onclick="loadHistory(true)">重整</button></div>
+                <div class="flex items-center gap-2"><span class="w-1 h-6 bg-emerald-600 rounded-full"></span><h2 class="text-xl font-bold text-slate-800">歷史資料庫</h2></div>
+                <div class="flex gap-2">
+                    <button class="btn btn-white" onclick="loadHistory(true)"><i class="ri-refresh-line"></i> 重整</button>
+                    <button class="btn btn-green" onclick="exportExcel('report')">下載報表</button>
+                </div>
             </div>
             <div class="table-wrapper flex-1 min-h-0 overflow-auto bg-white border border-slate-200 rounded-lg shadow-sm">
                 <table id="historyTable">
@@ -182,26 +197,68 @@
                     <tbody id="historyBody"></tbody>
                 </table>
             </div>
-            <div class="h-[60px] flex items-center justify-between border-t border-slate-200 pt-3 mt-2 shrink-0">
-                <div class="text-sm text-slate-500">共 <span id="pageInfoTotal" class="font-bold">0</span> 筆資料</div>
+            <div class="h-[60px] flex items-center justify-between border-t border-slate-200 pt-3 mt-2 shrink-0 bg-slate-100">
+                <div class="text-sm text-slate-500">顯示第 <span id="pageInfoStart" class="font-bold">0</span> - <span id="pageInfoEnd" class="font-bold">0</span> 筆，共 <span id="pageInfoTotal" class="font-bold">0</span> 筆</div>
                 <div class="flex gap-2"><button onclick="changePage(-1)" id="prevBtn" class="px-3 py-1 border rounded bg-white">上一頁</button><button onclick="changePage(1)" id="nextBtn" class="px-3 py-1 border rounded bg-white">下一頁</button></div>
             </div>
         </div>
 
-        <!-- 頁面：成果展示 -->
+        <!-- 頁面：成果展示牆 -->
         <div id="page-gallery" class="hidden flex-1 flex-col p-6 overflow-hidden h-full bg-slate-50">
-            <div class="flex-1 overflow-y-auto min-h-0" id="galleryContainer"><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="galleryGrid"></div></div>
+            <div class="flex justify-between items-center mb-6 shrink-0 flex-wrap gap-3">
+                <div class="flex items-center gap-2"><span class="w-1 h-6 bg-yellow-400 rounded-full"></span><h2 class="text-xl font-bold text-slate-800">成果展示牆</h2></div>
+                <div class="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm flex-1 max-w-md">
+                    <div class="pl-3 flex items-center text-slate-400"><i class="ri-search-line"></i></div>
+                    <input type="text" id="gallerySearchInput" onkeyup="searchGallery()" placeholder="搜尋單位、項目或日期..." class="w-full border-none outline-none bg-transparent px-2 text-sm font-bold text-slate-700 h-9">
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto min-h-0 pr-2 scroll-smooth" id="galleryContainer">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="galleryGrid"></div>
+            </div>
+            <div class="h-[60px] flex items-center justify-between border-t border-slate-200 pt-3 mt-2 shrink-0">
+                <div class="text-sm text-slate-500">顯示第 <span id="galInfoStart" class="font-bold">0</span> - <span id="galInfoEnd" class="font-bold">0</span> 筆，共 <span id="galInfoTotal" class="font-bold text-slate-700">0</span> 筆</div>
+                <div class="flex gap-2">
+                    <button onclick="changeGalleryPage(-1)" id="galPrevBtn" class="px-4 py-2 border border-slate-300 rounded-lg bg-white hover:bg-slate-50 text-sm font-bold">上一頁</button>
+                    <button onclick="changeGalleryPage(1)" id="galNextBtn" class="px-4 py-2 border border-slate-300 rounded-lg bg-white hover:bg-slate-50 text-sm font-bold">下一頁</button>
+                </div>
+            </div>
         </div>
     </main>
 
+    <!-- 隱藏控制項 -->
     <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="processCSV(this)">
     <input type="file" id="photoInput" accept="image/*" multiple style="display:none" onchange="handlePhotoUpload(this)">
+
+    <!-- 原始日曆 Modal -->
+    <div id="calendarModal" class="fixed inset-0 bg-black/50 hidden z-[1000] justify-center items-center backdrop-blur-sm">
+        <div class="bg-white w-[350px] p-5 rounded-2xl shadow-2xl">
+            <div class="flex justify-between items-center mb-2">
+                <button onclick="changeMonth(-1)" class="p-1 hover:bg-slate-100 rounded"><i class="ri-arrow-left-s-line"></i></button>
+                <div class="font-bold text-lg" id="calMonthTitle">2026年 1月</div>
+                <button onclick="changeMonth(1)" class="p-1 hover:bg-slate-100 rounded"><i class="ri-arrow-right-s-line"></i></button>
+            </div>
+            <div class="flex gap-2 mb-3 text-xs">
+                <button onclick="calFilter('all')" class="flex-1 py-1 border rounded hover:bg-slate-50">全選</button>
+                <button onclick="calFilter('noWeekend')" class="flex-1 py-1 border rounded hover:bg-slate-50">排除六日</button>
+                <button onclick="calFilter('onlyWeekend')" class="flex-1 py-1 border rounded hover:bg-slate-50">僅選六日</button>
+                <button onclick="calClear()" class="px-2 py-1 border text-red-500 rounded hover:bg-red-50">清</button>
+            </div>
+            <div class="calendar-grid text-sm font-bold text-slate-400 mb-1"><div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div></div>
+            <div id="calGrid" class="calendar-grid"></div>
+            <div class="mt-4 flex justify-end gap-2">
+                <button onclick="$('#calendarModal').classList.add('hidden'); $('#calendarModal').classList.remove('flex');" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg">取消</button>
+                <button onclick="confirmDate()" class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">確定</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         const $ = (s) => document.querySelector(s);
         let inputData = [], historyData = [], auditLogs={}; 
-        let currentYear = 2026, currentMonth = 1;
-        let currentPage = 1, itemsPerPage = 20;
+        let currentCalRow = null, selectedDates = new Set(), currentYear = 2026, currentMonth = 1;
+        let currentPage = 1, galleryPage = 1;
+        const itemsPerPage = 20, galleryPerPage = 24;
+        let uploadTarget = null, gallerySearchText = "";
 
         window.onload = function() { 
             const now = new Date();
@@ -212,17 +269,27 @@
             loadHistory(true);    
         };
 
+        // 頁面切換
         function switchPage(page) {
-            ['input', 'history', 'gallery'].forEach(p => $('#page-'+p).classList.add('hidden'));
-            $('#page-'+page).classList.remove('hidden');
+            if(window.innerWidth < 768) toggleSidebar();
+            document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
+            if($('#nav-'+page)) $('#nav-'+page).classList.add('active');
+            ['input', 'history', 'gallery'].forEach(p => {
+                const el = $('#page-'+p); el.classList.add('hidden'); el.classList.remove('flex');
+            });
+            const target = $('#page-'+page);
+            target.classList.remove('hidden');
+            if(page !== 'input') target.classList.add('flex');
             if(page === 'gallery') renderGallery();
         }
 
+        // 核心載入
         function loadHistory(refresh = false) {
             if(refresh) showLoading("資料同步中...");
             fetch(GAS_API_URL).then(r => r.json()).then(json => {
                 if (json.status === 'success') {
                     historyData = json.data || [];
+                    historyData.sort((a, b) => getDateValue(b.date) - getDateValue(a.date));
                     if(json.audit) {
                         auditLogs = {};
                         json.audit.forEach(log => auditLogs[`${log.ym}_${log.unit}`] = log.type);
@@ -230,44 +297,38 @@
                     renderHistoryTable();
                     renderAlertBanner();
                     renderUnitCheckboxes(); 
+                    renderGallery();
                 }
             }).finally(() => hideLoading());
         }
 
         // ==========================================
-        // ★ 核心功能：根據「建檔時間」自動判定結案
+        // ★ 核心功能修正：根據「建檔時間」自動判定結案
         // ==========================================
         function renderAlertBanner() {
             const now = new Date();
-            const yearAD = now.getFullYear(); // 2026
-            const month = now.getMonth() + 1; // 1
+            const yearAD = now.getFullYear(); 
+            const month = now.getMonth() + 1; 
             const yearROC = yearAD - 1911;
             
-            const ymKey = `${yearAD}-${String(month).padStart(2,'0')}`; // "2026-01"
+            const ymKey = `${yearAD}-${String(month).padStart(2,'0')}`; 
             const rocLabel = `${yearROC}年${month}月`;
 
-            // 1. 建立「本月已作業」清單
+            // 1. 抓取本月「有建檔紀錄」的單位
             const unitsDoneThisMonth = new Set();
-
             historyData.forEach(row => {
-                // row.createdAt 可能來自 GAS 的 Date 物件或格式字串
                 if (row.createdAt) {
                     const cDate = new Date(row.createdAt);
-                    // 只要「建檔時間」是 2026 年 1 月，就判定為本月已作業
                     if (!isNaN(cDate.getTime())) {
+                        // 判定條件：建檔年份 = 2026 且 月份 = 1
                         if (cDate.getFullYear() === yearAD && (cDate.getMonth() + 1) === month) {
-                            unitsDoneThisMonth.add(row.unit);
-                        }
-                    } else if (typeof row.createdAt === 'string') {
-                        // 如果 Date 轉換失敗，嘗試字串比對 (例如 "2026/1/5")
-                        if (row.createdAt.startsWith(`${yearAD}/${month}/`) || row.createdAt.startsWith(`${yearAD}/${String(month).padStart(2,'0')}/`)) {
                             unitsDoneThisMonth.add(row.unit);
                         }
                     }
                 }
             });
 
-            // 2. 比對所有單位
+            // 2. 判定尚未結案名單
             let missing = [], totalCount = 0;
             for (const [bat, squads] of Object.entries(AUDIT_UNITS)) {
                 let batMissing = [];
@@ -275,7 +336,6 @@
                     const hasManual = auditLogs[`${ymKey}_${u}`];
                     const hasDataInThisMonth = unitsDoneThisMonth.has(u);
                     
-                    // 如果沒有手動點選，且建檔時間也不是本月，才列為「尚未結案」
                     if (!hasManual && !hasDataInThisMonth) {
                         batMissing.push(u);
                     }
@@ -296,10 +356,15 @@
             }
         }
 
-        // --- 其他輔助功能 ---
+        // --- 原始功能區 ---
         function toggleSidebar() {
-            $('#mainSidebar').classList.toggle('-translate-x-full');
-            $('#sidebarOverlay').classList.toggle('hidden');
+            const sidebar = $('#mainSidebar');
+            const overlay = $('#sidebarOverlay');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden');
+            }
         }
 
         function initAuditDropdowns() {
@@ -309,9 +374,10 @@
         }
 
         function renderSquadSelect() {
-            const bat = $('#selBat').value;
-            const selSquad = $('#selSquad');
+            const bat = $('#selBat').value; const selSquad = $('#selSquad');
+            $('#unitCheckArea').classList.add('hidden');
             selSquad.innerHTML = '<option value="">請選擇中隊...</option>';
+            selSquad.disabled = true;
             if(bat) {
                 selSquad.disabled = false;
                 selSquad.innerHTML += '<option value="ALL">全部顯示</option>';
@@ -331,7 +397,7 @@
                 const div = document.createElement('div');
                 div.innerHTML = isChecked ? 
                     `<div class="bg-emerald-50 border border-emerald-200 text-emerald-600 rounded px-2 py-1 text-xs font-bold opacity-60"><i class="ri-checkbox-circle-fill"></i> ${u} (已結案)</div>` :
-                    `<label class="flex items-center gap-2 border border-slate-200 rounded px-2 py-1"><input type="checkbox" name="auditUnit" value="${u}"><span class="text-xs font-bold">${u}</span></label>`;
+                    `<label class="flex items-center gap-2 cursor-pointer border border-slate-200 rounded px-2 py-1 hover:bg-slate-50 transition"><input type="checkbox" name="auditUnit" value="${u}" class="w-4 h-4 text-blue-600 rounded"><span class="text-xs font-bold text-slate-700 select-none">${u}</span></label>`;
                 grid.appendChild(div);
             });
         }
@@ -341,7 +407,7 @@
             if(!checked.length) return alert('請先勾選單位');
             const type = document.querySelector('input[name="auditType"]:checked').value;
             const ym = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
-            showLoading("送出確認中...");
+            showLoading("結案處理中...");
             fetch(GAS_API_URL, {
                 method: 'POST',
                 body: JSON.stringify({ mode: 'update_audit', data: checked.map(u => ({ ym, unit: u, type })) }),
@@ -358,41 +424,96 @@
             const tbody = $('#inputBody'); tbody.innerHTML = '';
             inputData.forEach((row, i) => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td><button onclick="inputData.splice(${i},1);renderInputTable();">❌</button></td><td>${i+1}</td>
-                    <td><input type="text" onchange="inputData[${i}].date=this.value" value="${row.date}"></td>
-                    <td><input type="text" onchange="inputData[${i}].unit=this.value" value="${row.unit}"></td>
-                    <td><input type="text" onchange="inputData[${i}].loc=this.value" value="${row.loc}"></td>
-                    <td><input type="text" onchange="inputData[${i}].item=this.value" value="${row.item}"></td>
-                    <td><input type="number" onchange="inputData[${i}].session=this.value" value="${row.session}"></td>
-                    <td><input type="number" onchange="inputData[${i}].people=this.value" value="${row.people}"></td>
-                    <td><input type="text" onchange="inputData[${i}].note=this.value" value="${row.note}"></td>`;
+                tr.innerHTML = `
+                    <td class="text-center align-middle"><button onclick="inputData.splice(${i},1);renderInputTable();" class="text-slate-300 hover:text-red-500"><i class="ri-close-circle-fill text-xl"></i></button></td>
+                    <td class="text-center text-slate-400 font-mono align-middle">${i + 1}</td>
+                    <td><div class="flex items-center h-full relative"><input type="text" value="${row.date}" onchange="inputData[${i}].date=this.value" placeholder="點擊選取日期"><button onclick="openCalendar(${i})" class="absolute right-0 top-0 h-full w-8 text-slate-400 hover:text-blue-600"><i class="ri-calendar-line"></i></button></div></td>
+                    <td><input type="text" value="${row.unit}" onchange="inputData[${i}].unit=this.value" placeholder="請填寫"></td>
+                    <td><input type="text" value="${row.loc}" onchange="inputData[${i}].loc=this.value" placeholder="請填寫"></td>
+                    <td><input type="text" value="${row.item}" onchange="inputData[${i}].item=this.value" placeholder="請填寫"></td>
+                    <td><input type="number" value="${row.session}" onchange="inputData[${i}].session=this.value" placeholder="0"></td>
+                    <td><input type="number" value="${row.people}" onchange="inputData[${i}].people=this.value" placeholder="0"></td>
+                    <td><input type="text" value="${row.note}" onchange="inputData[${i}].note=this.value" placeholder="選填"></td>`;
                 tbody.appendChild(tr);
             });
         }
 
         function saveToCloud() {
-            const valid = inputData.filter(r => r.unit && r.item);
-            if(!valid.length) return alert('請至少填寫單位與項目');
+            const validData = inputData.filter(r => r.unit || r.item);
+            if (!validData.length) return alert('請至少填寫單位與項目');
             showLoading("儲存中...");
-            fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ mode: 'append', data: valid }), headers: { 'Content-Type': 'text/plain' } })
-            .then(() => { inputData = []; addInputRow(); loadHistory(); alert('儲存完成'); }).finally(() => hideLoading());
+            fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ data: validData, mode: 'append' }), headers: { 'Content-Type': 'text/plain' } })
+            .then(res => res.json()).then(json => {
+                if(json.status === 'success') { alert('儲存成功！'); inputData = []; addInputRow(); loadHistory(); }
+            }).finally(() => hideLoading());
         }
 
         function renderHistoryTable() {
             const tbody = $('#historyBody'); tbody.innerHTML = '';
+            let tS = 0, tP = 0;
+            historyData.forEach(r => { tS += parseInt(r.session)||0; tP += parseInt(r.people)||0; });
             const start = (currentPage - 1) * itemsPerPage;
             const pageData = historyData.slice(start, start + itemsPerPage);
             pageData.forEach((row, i) => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${start+i+1}</td><td>${row.date}</td><td>${row.unit}</td><td>${row.loc}</td><td>${row.item}</td><td>${row.session}</td><td>${row.people}</td><td>${row.note}</td><td class="text-center">${row.folderUrl?'✅':'❌'}</td>`;
+                tr.className = i % 2 === 0 ? 'bg-white' : 'bg-slate-50';
+                tr.innerHTML = `<td class="text-center font-mono text-xs">${start+i+1}</td><td class="px-2">${row.date}</td><td class="px-2">${row.unit}</td><td class="px-2">${row.loc}</td><td class="px-2">${row.item}</td><td class="text-center font-bold text-blue-600">${row.session}</td><td class="text-center font-bold text-emerald-600">${row.people}</td><td class="px-2 text-xs text-slate-400">${row.note}</td><td class="text-center">${row.folderUrl?'✅':'❌'}</td>`;
                 tbody.appendChild(tr);
             });
             $('#pageInfoTotal').innerText = historyData.length;
         }
 
-        function changePage(d) { currentPage += d; renderHistoryTable(); }
+        function renderGallery() {
+            let filtered = historyData.filter(r => gallerySearchText === "" || `${r.date} ${r.unit} ${r.item}`.toLowerCase().includes(gallerySearchText));
+            const start = (galleryPage - 1) * galleryPerPage;
+            const display = filtered.slice(start, start + galleryPerPage);
+            const grid = $('#galleryGrid'); grid.innerHTML = '';
+            display.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'gallery-card bg-white rounded-xl shadow-sm overflow-hidden border border-slate-100 cursor-pointer group hover:shadow-md';
+                div.onclick = () => item.folderUrl && window.open(item.folderUrl, '_blank');
+                const img = item.coverUrl ? `<img src="${item.coverUrl}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">` : `<div class="w-full h-full bg-slate-100 flex flex-col items-center justify-center text-slate-400"><i class="ri-folder-unknow-line text-3xl"></i></div>`;
+                div.innerHTML = `<div class="relative overflow-hidden aspect-video bg-slate-50">${img}</div><div class="p-4"><h3 class="font-bold text-slate-800 line-clamp-1 text-sm mb-1">${item.item}</h3><div class="flex justify-between text-xs text-slate-500"><span>${item.date}</span><span class="bg-slate-100 px-2 rounded">${item.unit}</span></div></div>`;
+                grid.appendChild(div);
+            });
+        }
+
+        function openCalendar(i) {
+            currentCalRow = i; selectedDates.clear();
+            $('#calendarModal').classList.remove('hidden'); $('#calendarModal').classList.add('flex');
+            renderCalendarGrid();
+        }
+
+        function renderCalendarGrid() {
+            const grid = $('#calGrid'); grid.innerHTML = '';
+            $('#calMonthTitle').innerText = `${currentYear}年 ${currentMonth}月`;
+            const days = new Date(currentYear, currentMonth, 0).getDate();
+            const first = new Date(currentYear, currentMonth - 1, 1).getDay();
+            for(let i=0; i<first; i++) grid.innerHTML += `<div class="day-cell empty border-none"></div>`;
+            for(let d=1; d<=days; d++) {
+                const key = `${currentYear}/${currentMonth}/${d}`, w = new Date(currentYear, currentMonth-1, d).getDay();
+                const sel = selectedDates.has(key), div = document.createElement('div');
+                div.className = `day-cell ${(w===0||w===6)?'weekend':''} ${sel?'selected':''}`; div.innerText = d;
+                div.onclick = () => { if(sel) selectedDates.delete(key); else selectedDates.add(key); renderCalendarGrid(); };
+                grid.appendChild(div);
+            }
+        }
+
+        function confirmDate() {
+            const sorted = Array.from(selectedDates).map(s => s.split('/').map(Number)).sort((a,b) => (a[0]*10000+a[1]*100+a[2])-(b[0]*10000+b[1]*100+b[2]));
+            if(!sorted.length) return $('#calendarModal').classList.add('hidden');
+            let groups = {}; sorted.forEach(d => { const k = `${d[0]}-${d[1]}`; if(!groups[k]) groups[k]=[]; groups[k].push(d[2]); });
+            let ps = []; for(let k in groups) { const [y,m] = k.split('-'); ps.push(`${y-1911}年${m}月${groups[k].join('、')}日`); }
+            inputData[currentCalRow].date = ps.join('；'); renderInputTable(); $('#calendarModal').classList.add('hidden');
+        }
+
+        function changeMonth(d) { currentMonth+=d; if(currentMonth>12){currentMonth=1;currentYear++;} if(currentMonth<1){currentMonth=12;currentYear--;} renderCalendarGrid(); }
+        function calClear() { selectedDates.clear(); renderCalendarGrid(); }
         function showLoading(msg) { $('#loadingText').innerText = msg; $('#loading').style.display = 'flex'; }
         function hideLoading() { $('#loading').style.display = 'none'; }
+        function getDateValue(s) { const m = s.match(/(\d+)年(\d+)月(\d+)/); return m ? parseInt(m[1])*10000 + parseInt(m[2])*100 + parseInt(m[3]) : 0; }
+        function changePage(d) { currentPage += d; renderHistoryTable(); }
+        function changeGalleryPage(d) { galleryPage += d; renderGallery(); }
     </script>
 </body>
 </html>
