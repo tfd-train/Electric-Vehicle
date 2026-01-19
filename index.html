@@ -578,18 +578,22 @@
         }
 
         function renderAlertBanner() {
-            const now = new Date();
-            const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-            const rocYm = `${now.getFullYear()-1911}年${now.getMonth()+1}月`;
-            let missing = [], totalMissingCount = 0;
-            for (const [bat, squads] of Object.entries(AUDIT_UNITS)) {
-                let batMissing = [];
-                Object.values(squads).flat().forEach(u => { if (!auditLogs[`${ym}_${u}`]) batMissing.push(u); });
-                if (batMissing.length > 0) { 
-                    totalMissingCount += batMissing.length; 
-                    missing.push(`<strong>${bat}</strong>：${batMissing.join('、')}`); 
-                }
-            }
+    const now = new Date();
+    const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const rocYm = `${now.getFullYear()-1911}年${now.getMonth()+1}月`;
+    let missing = [], totalMissingCount = 0;
+    for (const [bat, squads] of Object.entries(AUDIT_UNITS)) {
+        let batMissing = [];
+        Object.values(squads).flat().forEach(u => { 
+            // 這裡原本只檢查 auditLogs (手動點選結案的紀錄)
+            if (!auditLogs[`${ym}_${u}`]) batMissing.push(u); 
+        });
+        if (batMissing.length > 0) { 
+            totalMissingCount += batMissing.length; 
+            missing.push(`<strong>${bat}</strong>：${batMissing.join('、')}`); 
+        }
+    }
+    
             const banner = $('#alertBanner');
             if (missing.length > 0) {
                 banner.classList.remove('hidden');
