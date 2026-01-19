@@ -13,7 +13,7 @@
     <script>
         // ==========================================
         // ⚠️【請填入您的 Google Apps Script 網址】
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw3F_hd-BEJbblLVG-mE0Zcdu6wHff1mjjVnQ0NrNvuMrqdM5ktLLK1mr3LMF0q8osA/exec"; 
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzDcmFx7mcKMcKQDk4T4m0RoQziRhAKlih1Jq4g6-n1Lq5qsuyJT9xtRRl6ExmQi3V6/exec"; 
         
         // 🔗 系統連結
         const SYSTEM_LINKS = {
@@ -579,29 +579,52 @@
 
         function renderAlertBanner() {
     const now = new Date();
-    const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-    const rocYm = `${now.getFullYear()-1911}年${now.getMonth()+1}月`;
+    const yearAD = now.getFullYear(); 
+    const month = now.getMonth() + 1; 
+    const rocYm = `${yearAD-1911}年${month}月`;
+    const ymKey = `${yearAD}-${String(month).padStart(2,'0')}`;
+
+    // 1. 自動檢查：找出本月(建檔時間)有資料的單位
+    const unitsActiveThisMonth = new Set();
+    historyData.forEach(row => {
+        if (row.createdAt) {
+            const cDate = new Date(row.createdAt);
+            // 只要「建檔時間」是在 2026 年 1 月，就判定該單位本月已作業
+            if (!isNaN(cDate.getTime())) {
+                if (cDate.getFullYear() === yearAD && (cDate.getMonth() + 1) === month) {
+                    unitsActiveThisMonth.add(row.unit);
+                }
+            }
+        }
+    });
+
     let missing = [], totalMissingCount = 0;
     for (const [bat, squads] of Object.entries(AUDIT_UNITS)) {
         let batMissing = [];
         Object.values(squads).flat().forEach(u => { 
-            // 這裡原本只檢查 auditLogs (手動點選結案的紀錄)
-            if (!auditLogs[`${ym}_${u}`]) batMissing.push(u); 
+            const hasManual = auditLogs[`${ymKey}_${u}`];        // 檢查手動點選結案
+            const hasDataCreation = unitsActiveThisMonth.has(u); // 檢查本月建檔紀錄
+
+            // 如果「沒點手動結案」且「本月沒建資料」，才列為未結案
+            if (!hasManual && !hasDataCreation) {
+                batMissing.push(u); 
+            }
         });
         if (batMissing.length > 0) { 
             totalMissingCount += batMissing.length; 
             missing.push(`<strong>${bat}</strong>：${batMissing.join('、')}`); 
         }
     }
-    
-            const banner = $('#alertBanner');
-            if (missing.length > 0) {
-                banner.classList.remove('hidden');
-                $('#alertTitle').innerText = `⚠️ ${rocYm} 尚未結案提醒 (剩餘 ${totalMissingCount} 個單位)`;
-                $('#alertContent').innerHTML = missing.join('<br>');
-            } else { banner.classList.add('hidden'); }
-        }
 
+    const banner = $('#alertBanner');
+    if (missing.length > 0) {
+        banner.classList.remove('hidden');
+        $('#alertTitle').innerText = `⚠️ ${rocYm} 尚未結案提醒 (剩餘 ${totalMissingCount} 個單位)`;
+        $('#alertContent').innerHTML = missing.join('<br>');
+    } else { 
+        banner.classList.add('hidden'); 
+    }
+}
         function changePage(delta) {
             const maxPage = Math.ceil(historyData.length / itemsPerPage);
             currentPage += delta;
