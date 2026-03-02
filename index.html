@@ -346,7 +346,33 @@
         let gallerySearchText = "";
         const galleryPerPage = 24;
 
-        window.onload = function() { 
+        // ★ 新增：全自動時間判定 (預設 15 號以前為月初，稽核上個月)
+        let systemNow = new Date();
+        let auditYear = systemNow.getFullYear();
+        let auditMonth = systemNow.getMonth() + 1;
+        if (systemNow.getDate() <= 15) {
+            auditMonth -= 1;
+            if (auditMonth === 0) { auditMonth = 12; auditYear -= 1; }
+        }
+        const currentAuditYm = `${auditYear}-${String(auditMonth).padStart(2,'0')}`;
+        const currentAuditRoc = `${auditYear-1911}年${auditMonth}月`;
+
+        // ★ 新增：從「114年1月21日；114年2月11日」等字串中抓出所有訓練月份
+        function getTrainedMonths(dateStr) {
+            if (!dateStr) return [];
+            let months = new Set();
+            let regex = /(\d{2,4})[年/-]\s*0*(\d{1,2})\s*[月/-]?/g;
+            let match;
+            while ((match = regex.exec(dateStr)) !== null) {
+                let y = parseInt(match[1]);
+                let m = parseInt(match[2]);
+                if (y < 1911) y += 1911; // 轉西元
+                months.add(`${y}-${m}`);
+            }
+            return Array.from(months);
+        }
+
+        window.onload = function() {
             addInputRow(); 
             initAuditDropdowns(); 
             loadHistory(true);    
@@ -501,7 +527,7 @@
                     renderHistoryTable();
                     renderAlertBanner();
                     renderUnitCheckboxes(); 
-                    if(currentTab === 'gallery') renderGallery();
+                    if(!$('#page-gallery').classList.contains('hidden')) renderGallery();
                 }
             }).finally(() => hideLoading());
         }
@@ -540,8 +566,7 @@
             let unitsToShow = [];
             if(sq === 'ALL') Object.values(AUDIT_UNITS[bat]).forEach(arr => unitsToShow.push(...arr));
             else unitsToShow = AUDIT_UNITS[bat][sq];
-            const now = new Date();
-            const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+            const ym = currentAuditYm;
             unitsToShow.forEach(u => {
                 const isChecked = auditLogs[`${ym}_${u}`] === true || auditLogs[`${ym}_${u}`] === '已填寫' || auditLogs[`${ym}_${u}`] === '本月無更新';
                 const div = document.createElement('div');
@@ -561,8 +586,7 @@
             const checked = Array.from(document.querySelectorAll('input[name="auditUnit"]:checked')).map(c => c.value);
             if(checked.length === 0) return alert('請至少勾選一個單位');
             const type = document.querySelector('input[name="auditType"]:checked').value;
-            const now = new Date();
-            const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+            const ym = currentAuditYm;
             const payload = checked.map(u => ({ ym: ym, unit: u, type: type }));
             showLoading("送出確認中...");
             fetch(GAS_API_URL, {
@@ -578,53 +602,44 @@
         }
 
         function renderAlertBanner() {
-    const now = new Date();
-    const yearAD = now.getFullYear(); 
-    const month = now.getMonth() + 1; 
-    const rocYm = `${yearAD-1911}年${month}月`;
-    const ymKey = `${yearAD}-${String(month).padStart(2,'0')}`;
+            // 1. 自動檢查：改認「訓練日期(row.date)」
+            const unitsActiveThisMonth = new Set();
+            historyData.forEach(row => {
+                if (row.date) {
+                    const trainedMonths = getTrainedMonths(String(row.date));
+                    if (trainedMonths.includes(`${auditYear}-${auditMonth}`)) {
+                        unitsActiveThisMonth.add(row.unit);
+                    }
+                }
+            });
 
-    // 1. 自動檢查：找出本月(建檔時間)有資料的單位
-    const unitsActiveThisMonth = new Set();
-    historyData.forEach(row => {
-        if (row.createdAt) {
-            const cDate = new Date(row.createdAt);
-            // 只要「建檔時間」是在 2026 年 1 月，就判定該單位本月已作業
-            if (!isNaN(cDate.getTime())) {
-                if (cDate.getFullYear() === yearAD && (cDate.getMonth() + 1) === month) {
-                    unitsActiveThisMonth.add(row.unit);
+            let missing = [], totalMissingCount = 0;
+            for (const[bat, squads] of Object.entries(AUDIT_UNITS)) {
+                let batMissing =[];
+                Object.values(squads).flat().forEach(u => { 
+                    const hasManual = auditLogs[`${currentAuditYm}_${u}`]; // 手動確認紀錄
+                    const hasData = unitsActiveThisMonth.has(u);           // 系統訓練紀錄
+
+                    // 如果沒手動點結案，且當月也沒辦訓練，列入未結案
+                    if (!hasManual && !hasData) {
+                        batMissing.push(u); 
+                    }
+                });
+                if (batMissing.length > 0) { 
+                    totalMissingCount += batMissing.length; 
+                    missing.push(`<strong>${bat}</strong>：${batMissing.join('、')}`); 
                 }
             }
-        }
-    });
 
-    let missing = [], totalMissingCount = 0;
-    for (const [bat, squads] of Object.entries(AUDIT_UNITS)) {
-        let batMissing = [];
-        Object.values(squads).flat().forEach(u => { 
-            const hasManual = auditLogs[`${ymKey}_${u}`];        // 檢查手動點選結案
-            const hasDataCreation = unitsActiveThisMonth.has(u); // 檢查本月建檔紀錄
-
-            // 如果「沒點手動結案」且「本月沒建資料」，才列為未結案
-            if (!hasManual && !hasDataCreation) {
-                batMissing.push(u); 
+            const banner = $('#alertBanner');
+            if (missing.length > 0) {
+                banner.classList.remove('hidden');
+                $('#alertTitle').innerText = `⚠️ ${currentAuditRoc} 尚未結案提醒 (剩餘 ${totalMissingCount} 個單位)`;
+                $('#alertContent').innerHTML = missing.join('<br>');
+            } else { 
+                banner.classList.add('hidden'); 
             }
-        });
-        if (batMissing.length > 0) { 
-            totalMissingCount += batMissing.length; 
-            missing.push(`<strong>${bat}</strong>：${batMissing.join('、')}`); 
         }
-    }
-
-    const banner = $('#alertBanner');
-    if (missing.length > 0) {
-        banner.classList.remove('hidden');
-        $('#alertTitle').innerText = `⚠️ ${rocYm} 尚未結案提醒 (剩餘 ${totalMissingCount} 個單位)`;
-        $('#alertContent').innerHTML = missing.join('<br>');
-    } else { 
-        banner.classList.add('hidden'); 
-    }
-}
         function changePage(delta) {
             const maxPage = Math.ceil(historyData.length / itemsPerPage);
             currentPage += delta;
